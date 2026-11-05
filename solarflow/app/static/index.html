@@ -175,6 +175,7 @@ const T={
    allCats:"Alle",cat_heat:"Wärme",cat_electric:"Strom",cat_mobility:"Mobilität",cat_storage:"Speicher",cat_generic:"Sonstiges",
    edit:"Bearbeiten",remove:"Entfernen",on:"an",offState:"aus",enabled:"Aktiv",disabled:"Pausiert",
    rolePick:"– bitte wählen –",name:"Name",discover:"✨ Automatisch erkennen",save2:"Übernehmen",cancel:"Abbrechen",
+   fromDevice:"Aus Gerät",allEntities:"– alle Entitäten –",
    st_idle:"Bereit",st_charging:"Lädt",st_heating:"Heizt",st_holding:"Hält",st_ready:"Bereit",st_blocked:"Gesperrt",
    removeQ:"Dieses Gerät wirklich entfernen?",req:"Pflicht"},
  en:{title:"SolarFlow",sub:"Push heat and charging into the sun – safely.",
@@ -195,6 +196,7 @@ const T={
    allCats:"All",cat_heat:"Heat",cat_electric:"Electric",cat_mobility:"Mobility",cat_storage:"Storage",cat_generic:"Other",
    edit:"Edit",remove:"Remove",on:"on",offState:"off",enabled:"Active",disabled:"Paused",
    rolePick:"– please choose –",name:"Name",discover:"✨ Auto-detect",save2:"Apply",cancel:"Cancel",
+   fromDevice:"From device",allEntities:"– all entities –",
    st_idle:"Idle",st_charging:"Charging",st_heating:"Heating",st_holding:"Holding",st_ready:"Ready",st_blocked:"Blocked",
    removeQ:"Really remove this device?",req:"required"}
 };
@@ -333,14 +335,28 @@ function log(s){
 }
 
 // ---------------------------------------------------------------- Modal
+function groupByKey(key){
+  return (SNAP&&SNAP.device_groups||[]).find(g=>g.key===key);
+}
+function entityPool(){
+  if(EDIT&&EDIT.device_key){const g=groupByKey(EDIT.device_key);if(g)return g.entities||[];}
+  return CATALOG||[];
+}
 function editModal(s){
   const spec=(s.device_types||[]).find(x=>x.type_id===EDIT.type_id)||{roles:[],settings:[],name_de:EDIT.type_id};
   const nameVal=EDIT.name||(LANG==="de"?spec.name_de:spec.name_en);
+  const groups=s.device_groups||[];
+  const groupSel=`<div class="srow"><label>${t("fromDevice")}</label>
+    <select data-dgroup><option value="">${t("allEntities")}</option>
+      ${groups.map(g=>`<option value="${g.key}" ${EDIT.device_key===g.key?"selected":""}>${esc(g.name)}${g.area?" · "+esc(g.area):""} (${g.entity_count})</option>`).join("")}
+    </select></div>`;
+  const pool=entityPool();
   const roleRows=(spec.roles||[]).map(r=>{
     const cur=(EDIT.roles||{})[r.key]||"";
-    const opts=(CATALOG||[]).filter(e=>(r.domains||[]).length===0||(r.domains||[]).includes(e.domain));
+    const opts=pool.filter(e=>(r.domains||[]).length===0||(r.domains||[]).includes(e.domain));
+    const extra=cur&&!opts.some(e=>e.entity_id===cur)?`<option value="${cur}" selected>${esc(cur)}</option>`:"";
     return `<div class="role-row"><label>${esc(LANG==="de"?r.label_de:r.label_en)}${r.required?` <span class="req">(${t("req")})</span>`:""}</label>
-      <select data-role="${r.key}"><option value="">${t("rolePick")}</option>
+      <select data-role="${r.key}"><option value="">${t("rolePick")}</option>${extra}
         ${opts.map(e=>`<option value="${e.entity_id}" ${e.entity_id===cur?"selected":""}>${esc(e.entity_id)} — ${esc(e.name)}</option>`).join("")}
       </select></div>`;
   }).join("");
@@ -353,6 +369,7 @@ function editModal(s){
   return `<div class="modal" data-modal><div class="box">
     <div class="mh"><div class="dev-ico">🧩</div><div><h3>${esc(LANG==="de"?spec.name_de:spec.name_en)}</h3>
       <div class="dev-type">${esc(LANG==="de"?spec.summary_de:spec.summary_en)}</div></div></div>
+    ${groupSel}
     <div class="srow"><label>${t("name")}</label><input type="text" data-dname value="${esc(nameVal)}"/></div>
     <button class="ghost" data-ddiscover>${t("discover")}</button>
     <div style="margin-top:10px">${roleRows}</div>
@@ -386,6 +403,7 @@ function wire(){
   const m=document.querySelector("[data-modal]");if(m)m.onclick=e=>{if(e.target===m){EDIT=null;render();}};
   const dsc=document.querySelector("[data-ddiscover]");if(dsc)dsc.onclick=discoverRoles;
   const dsv=document.querySelector("[data-dsave]");if(dsv)dsv.onclick=saveDevice;
+  const dgrp=document.querySelector("[data-dgroup]");if(dgrp)dgrp.onchange=()=>{EDIT.device_key=dgrp.value;render();};
   document.querySelectorAll("input[data-dset]").forEach(el=>el.oninput=()=>{
     EDIT.settings=Object.assign({},EDIT.settings,{[el.dataset.dset]:Number(el.value)});
     const o=document.querySelector(`output[data-dout="${el.dataset.dset}"]`);if(o)o.textContent=el.value;});
@@ -419,7 +437,7 @@ function openEdit(id){
 async function discoverRoles(){
   const roles={};document.querySelectorAll("[data-role]").forEach(el=>{if(el.value)roles[el.dataset.role]=el.value;});
   const name=document.querySelector("[data-dname]")?.value||"";
-  const r=await api("/api/device/discover",{method:"POST",body:JSON.stringify({type_id:EDIT.type_id,name})});
+  const r=await api("/api/device/discover",{method:"POST",body:JSON.stringify({type_id:EDIT.type_id,name,device_key:EDIT.device_key||""})});
   if(r&&r.roles){Object.entries(r.roles).forEach(([k,v])=>{if(v)roles[k]=v;});EDIT.roles=roles;render();toast(t("detect"));}
 }
 async function saveDevice(){

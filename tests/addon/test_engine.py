@@ -35,11 +35,12 @@ def _state(value, unit=None, **attrs):
 class FakeClient:
     """Minimaler HA-Ersatz: liefert Zustände und merkt sich Dienstaufrufe."""
 
-    def __init__(self, states: dict[str, dict]):
+    def __init__(self, states: dict[str, dict], registry: dict | None = None):
         self._states = states
         self.connected = True
         self.calls: list[tuple[str, str, dict, str | None]] = []
         self.callbacks = []
+        self._registry = registry or {"devices": [], "entities": [], "areas": []}
 
     def state(self, entity_id):
         return self._states.get(entity_id)
@@ -56,6 +57,9 @@ class FakeClient:
 
     def add_state_callback(self, cb):
         self.callbacks.append(cb)
+
+    async def fetch_registry(self):
+        return self._registry
 
     async def call_service(self, domain, service, data, entity_id=None):
         self.calls.append((domain, service, data, entity_id))
@@ -208,3 +212,63 @@ def test_client_value_and_catalog_helpers():
     assert c.value("sensor.none") is None
     cat = c.entity_catalog()
     assert {e["entity_id"] for e in cat} == {"sensor.a", "sensor.b"}
+
+
+@pytest.mark.asyncio
+async def test_registry_groups_and_discovery(tmp_path):
+    """Das Geräte-Register bündelt Entitäten; die Erkennung nutzt sie."""
+    registry = {
+        "devices": [
+            {"id": "d1", "name": "Wallbox Garage", "manufacturer": "ACME", "area_id": "a1"},
+            {"id": "d2", "name": "Wallbox Carport"},
+        ],
+        "entities": [
+            {"entity_id": "switch.wb1", "device_id": "d1", "name": "Laden", "area_id": "a1"},
+            {"entity_id": "sensor.wb1_power", "device_id": "d1", "name": "Leistung"},
+            {"entity_id": "switch.wb2", "device_id": "d2", "name": "Laden"},
+        ],
+        "areas": [{"area_id": "a1", "name": "Garage"}],
+    }
+    states = _states()
+    states["switch.wb1"] = _state("off")
+    states["sensor.wb1_power"] = _state(0.0, "W")
+    states["switch.wb2"] = _state("off")
+    client = FakeClient(states, registry)
+    eng = SolarFlowEngine(client, str(tmp_path))
+    eng.load({})
+
+    groups = await eng.refresh_registry(force=True)
+    names = [g.name for g in groups]
+    assert "Wallbox Garage" in names and "Wallbox Carport" in names
+    garage = next(g for g in groups if g.key == "d1")
+    assert garage.area == "Garage" and len(garage.entities) == 2
+
+    roles = eng.discover_device("wallbox", "Wallbox Garage", "d1")
+    assert roles["switch"] == "switch.wb1"
+    assert roles["power"] == "sensor.wb1_power"
+
+
+@pytest.mark.asyncio
+async def test_device_without_required_role_is_skipped(tmp_path):
+    """Ein Gerät ohne Pflicht-Entität wird gemeldet, aber nie geschaltet."""
+    eng, client = _engine(tmp_path, _states(feed_in_w=6000.0))
+    eng.add_device("wallbox", name="Ohne Schalter", roles={"power": "sensor.storage"})
+    eng.settings.mode = "active"
+    decision = await eng.async_run_cycle()
+    assert client.calls == []
+    assert any("Pflicht" in text for _, text in decision.steps)
+
+
+@pytest.mark.asyncio
+async def test_two_wallboxes_switch_independently(tmp_path):
+    """Mehrere gleiche Geräte (z. B. zwei Wallboxen) funktionieren parallel."""
+    states = _states(feed_in_w=7000.0)
+    states["switch.wb1"] = _state("off")
+    states["switch.wb2"] = _state("off")
+    eng, client = _engine(tmp_path, states)
+    eng.add_device("wallbox", name="Wallbox 1", roles={"switch": "switch.wb1"})
+    eng.add_device("wallbox", name="Wallbox 2", roles={"switch": "switch.wb2"})
+    eng.settings.mode = "active"
+    await eng.async_run_cycle()
+    targets = {c[3] for c in client.calls}
+    assert {"switch.wb1", "switch.wb2"} <= targets

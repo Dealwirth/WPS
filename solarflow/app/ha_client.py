@@ -108,6 +108,41 @@ class HomeAssistantClient:
         data = await self.rest_get("/states")
         return list(data) if isinstance(data, list) else []
 
+    async def fetch_device_registry(self) -> list[dict[str, Any]]:
+        """Geräte-Register von Home Assistant (über die Config-API)."""
+        data = await self.rest_get("/config/device_registry/list")
+        return list(data) if isinstance(data, list) else []
+
+    async def fetch_entity_registry(self) -> list[dict[str, Any]]:
+        """Entitäts-Register: verknüpft Entitäten mit Geräten und Bereichen."""
+        data = await self.rest_get("/config/entity_registry/list")
+        return list(data) if isinstance(data, list) else []
+
+    async def fetch_areas(self) -> list[dict[str, Any]]:
+        data = await self.rest_get("/config/area_registry/list")
+        return list(data) if isinstance(data, list) else []
+
+    async def ws_command(self, msg: dict[str, Any]) -> Any:
+        """Öffentlicher WS-Befehl (z. B. für Register-Abfragen)."""
+        if not self._ws_ready.is_set():
+            raise RuntimeError("WebSocket nicht verbunden")
+        return await self._ws_command(msg)
+
+    async def fetch_registry(self) -> dict[str, list[dict[str, Any]]]:
+        """Geräte-, Entitäts- und Bereichs-Register – bevorzugt über WebSocket."""
+        try:
+            return {
+                "devices": await self.ws_command({"type": "config/device_registry/list"}) or [],
+                "entities": await self.ws_command({"type": "config/entity_registry/list"}) or [],
+                "areas": await self.ws_command({"type": "config/area_registry/list"}) or [],
+            }
+        except Exception:  # Fallback: REST (klappt je nach Rechten nicht immer)
+            return {
+                "devices": await self.fetch_device_registry(),
+                "entities": await self.fetch_entity_registry(),
+                "areas": await self.fetch_areas(),
+            }
+
     # ------------------------------------------------------------------ #
     # WebSocket
     # ------------------------------------------------------------------ #

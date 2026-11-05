@@ -93,6 +93,10 @@ class DeviceTypeSpec:
     def role(self, key: str) -> RoleSpec | None:
         return next((r for r in self.roles if r.key == key), None)
 
+    @property
+    def required_roles(self) -> tuple[str, ...]:
+        return tuple(r.key for r in self.roles if r.required)
+
     def default_settings(self) -> dict[str, float]:
         return {s.key: s.default for s in self.settings}
 

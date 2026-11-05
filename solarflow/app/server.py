@@ -60,6 +60,8 @@ async def create_app() -> web.Application:
         await client.start()
         await client.wait_connected(timeout=25.0)
         engine.bind()
+        with contextlib.suppress(Exception):
+            await engine.refresh_registry(force=True)
         _app["cycle_task"] = asyncio.create_task(cycle_loop())
 
     async def on_cleanup(_app: web.Application) -> None:
@@ -127,6 +129,11 @@ async def create_app() -> web.Application:
     async def device_types(_req: web.Request) -> web.Response:
         return web.json_response(engine.device_types())
 
+    async def device_registry(req: web.Request) -> web.Response:
+        force = req.query.get("force") == "1"
+        await engine.refresh_registry(force=force)
+        return web.json_response(engine.device_groups())
+
     async def add_device(req: web.Request) -> web.Response:
         body = await req.json()
         dev = engine.add_device(
@@ -159,7 +166,11 @@ async def create_app() -> web.Application:
 
     async def discover_device(req: web.Request) -> web.Response:
         body = await req.json()
-        roles = engine.discover_device(str(body.get("type_id", "")), str(body.get("name", "")))
+        roles = engine.discover_device(
+            str(body.get("type_id", "")),
+            str(body.get("name", "")),
+            str(body.get("device_key", "")),
+        )
         return web.json_response({"roles": roles})
 
     async def set_mode(req: web.Request) -> web.Response:
@@ -197,6 +208,7 @@ async def create_app() -> web.Application:
     app.router.add_get("/api/entities", entities)
     app.router.add_get("/api/suggest", suggestions)
     app.router.add_get("/api/device_types", device_types)
+    app.router.add_get("/api/devices/registry", device_registry)
     app.router.add_post("/api/devices", add_device)
     app.router.add_post("/api/device/update", update_device)
     app.router.add_post("/api/device/remove", remove_device)

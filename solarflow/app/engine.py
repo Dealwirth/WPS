@@ -24,10 +24,14 @@ from core.devices import (
     TYPES_BY_ID,
     Device,
     DeviceContext,
+    DeviceEntity,
+    DeviceGroup,
     assess,
     clamp_device_settings,
     device_view,
+    group_by_device,
     make_device,
+    missing_required_roles,
     suggest_roles,
     type_cards,
 )
@@ -74,6 +78,9 @@ class SolarFlowEngine:
         self.last_good_temp: float | None = None
         #: Laufzeit je Gerät: since (Ein-Zeitpunkt), last_off (für Mindestpause).
         self.device_runtime: dict[str, dict[str, float]] = {}
+        #: Zwischengespeichertes HA-Geräte-Register (Entitäten je Gerät).
+        self._groups: list[DeviceGroup] = []
+        self._registry_fetched: float = 0.0
         self._lock = asyncio.Lock()
         self._wake = asyncio.Event()
         self._last_seen: dict[str, str] = {}
@@ -311,12 +318,25 @@ class SolarFlowEngine:
             return True
         return False
 
-    def discover_device(self, type_id: str, name_hint: str = "") -> dict[str, str]:
+    def discover_device(self, type_id: str, name_hint: str = "", device_key: str = "") -> dict[str, str]:
+        """Schlägt je Rolle eine Entität vor – bevorzugt aus dem gewählten Gerät."""
         spec = TYPES_BY_ID.get(type_id)
         if spec is None:
             return {}
-        infos = [
-            EntityInfo(
+        infos = [self._entity_info(g) for g in self._entity_pool(device_key)]
+        return {s.key: (s.entity_id or "") for s in suggest_roles(spec, infos, hint=name_hint)}
+
+    def _entity_pool(self, device_key: str) -> list[DeviceEntity]:
+        """Entitäten des gewählten HA-Geräts – sonst alle bekannten."""
+        if device_key:
+            group = next((g for g in self._groups if g.key == device_key), None)
+            if group is not None:
+                return list(group.entities)
+        return [e for g in self._groups for e in g.entities] or self._all_entities()
+
+    def _all_entities(self) -> list[DeviceEntity]:
+        return [
+            DeviceEntity(
                 entity_id=e["entity_id"],
                 domain=e["domain"],
                 name=e.get("name") or "",
@@ -326,7 +346,75 @@ class SolarFlowEngine:
             )
             for e in self.client.entity_catalog()
         ]
-        return {s.key: (s.entity_id or "") for s in suggest_roles(spec, infos, hint=name_hint)}
+
+    @staticmethod
+    def _entity_info(e: DeviceEntity) -> EntityInfo:
+        return EntityInfo(
+            entity_id=e.entity_id,
+            domain=e.domain,
+            name=e.name,
+            device_class=e.device_class,
+            unit=e.unit,
+            state=e.state,
+        )
+
+    async def refresh_registry(self, force: bool = False) -> list[DeviceGroup]:
+        """Liest das HA-Geräte-Register (mit Cache) und bündelt es zu Gruppen."""
+        now = time.monotonic()
+        if not force and self._groups and (now - self._registry_fetched) < 120:
+            return self._groups
+        try:
+            registry = await self.client.fetch_registry()
+            raw_devices = registry.get("devices", [])
+            raw_entities = registry.get("entities", [])
+            raw_areas = registry.get("areas", [])
+        except Exception as err:  # defensiv: ohne Register weiterarbeiten
+            self.last_error = str(err)
+            _LOGGER.debug("Geräte-Register nicht verfügbar", exc_info=True)
+            if not self._groups:
+                self._groups = [DeviceGroup(key="__none__", name="Ohne Gerät", entities=self._all_entities())]
+            return self._groups
+
+        states = {e["entity_id"]: e for e in self.client.entity_catalog()}
+        devices = {
+            d["id"]: {
+                "name": d.get("name") or "",
+                "name_by_user": d.get("name_by_user") or "",
+                "manufacturer": d.get("manufacturer") or "",
+                "model": d.get("model") or "",
+                "area_id": d.get("area_id") or "",
+            }
+            for d in raw_devices
+            if d.get("id")
+        }
+        areas = {a["area_id"]: a.get("name", "") for a in raw_areas if a.get("area_id")}
+
+        entities: list[DeviceEntity] = []
+        for e in raw_entities:
+            eid = e.get("entity_id")
+            if not eid or e.get("entity_category") == "diagnostic":
+                continue
+            st = states.get(eid, {})
+            entities.append(
+                DeviceEntity(
+                    entity_id=eid,
+                    domain=eid.split(".")[0],
+                    name=e.get("name") or e.get("original_name") or st.get("name") or eid,
+                    device_id=e.get("device_id"),
+                    area_id=e.get("area_id"),
+                    device_class=st.get("device_class"),
+                    unit=st.get("unit"),
+                    state=st.get("state"),
+                    disabled=bool(e.get("disabled_by")),
+                    hidden=bool(e.get("hidden_by")),
+                )
+            )
+        self._groups = group_by_device(entities, devices, areas)
+        self._registry_fetched = now
+        return self._groups
+
+    def device_groups(self) -> list[dict[str, object]]:
+        return [g.as_dict() for g in self._groups]
 
     # ------------------------------------------------------------------ #
     # Regelzyklus
@@ -398,6 +486,12 @@ class SolarFlowEngine:
 
         for device in self.devices:
             if not device.enabled:
+                continue
+            missing = missing_required_roles(device)
+            if missing:
+                steps.append(
+                    ("warn", f"{device.name}: Pflicht-Zuordnung fehlt ({', '.join(missing)}) – pausiert.")
+                )
                 continue
             ctx = self._build_context(device, feed_in, surplus_ok, now)
             assessment = assess(ctx)
@@ -602,6 +696,7 @@ class SolarFlowEngine:
             ],
             "device_types": type_cards(),
             "devices": [device_view(d) for d in self.devices],
+            "device_groups": [g.as_dict() for g in self._groups],
             "assessments": [a.as_dict() for a in self.last_assessments],
             "audit": self.audit[:60],
             "sources": dict(self.sources),

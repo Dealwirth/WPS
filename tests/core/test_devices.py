@@ -13,9 +13,12 @@ from core.devices import (
     DEVICE_TYPES,
     TYPES_BY_ID,
     DeviceContext,
+    DeviceEntity,
     assess,
     clamp_device_settings,
+    group_by_device,
     make_device,
+    missing_required_roles,
     suggest_roles,
     type_cards,
 )
@@ -194,6 +197,51 @@ class TestDiscovery(unittest.TestCase):
         spec = TYPES_BY_ID["heat_pump"]
         sug = suggest_roles(spec, [])
         self.assertTrue(all(s.entity_id is None for s in sug))
+
+    def test_domain_alone_is_not_enough(self):
+        """Ein reiner Domänen-Treffer darf keine Rolle belegen."""
+        spec = TYPES_BY_ID["wallbox"]
+        entities = [EntityInfo("sensor.feed_in", "sensor", "Einspeisung", unit="W")]
+        sug = {s.key: s for s in suggest_roles(spec, entities)}
+        self.assertIsNone(sug["soc"].entity_id)
+
+    def test_missing_required_roles(self):
+        dev = make_device("wallbox", roles={"power": "sensor.p"})
+        self.assertEqual(missing_required_roles(dev), ["switch"])
+        dev.roles["switch"] = "switch.w"
+        self.assertEqual(missing_required_roles(dev), [])
+
+
+class TestRegistry(unittest.TestCase):
+    def test_groups_by_device(self):
+        entities = [
+            DeviceEntity("switch.wb1", "switch", "Wallbox 1", device_id="d1"),
+            DeviceEntity("sensor.wb1_power", "sensor", "Leistung", device_id="d1", unit="W"),
+            DeviceEntity("switch.wb2", "switch", "Wallbox 2", device_id="d2"),
+            DeviceEntity("sensor.lonely", "sensor", "Ohne Gerät"),
+        ]
+        devices = {"d1": {"name": "Wallbox Eins"}, "d2": {"name": "Wallbox Zwei"}}
+        groups = group_by_device(entities, devices, {})
+        names = [g.name for g in groups]
+        self.assertIn("Wallbox Eins", names)
+        self.assertIn("Wallbox Zwei", names)
+        self.assertEqual(names[-1], "Ohne Gerät")
+        first = next(g for g in groups if g.key == "d1")
+        self.assertEqual(len(first.entities), 2)
+
+    def test_hidden_and_disabled_are_skipped(self):
+        entities = [
+            DeviceEntity("switch.a", "switch", "A", device_id="d1"),
+            DeviceEntity("switch.b", "switch", "B", device_id="d1", disabled=True),
+            DeviceEntity("switch.c", "switch", "C", device_id="d1", hidden=True),
+        ]
+        groups = group_by_device(entities, {"d1": {"name": "Gerät"}}, {})
+        self.assertEqual([e.entity_id for e in groups[0].entities], ["switch.a"])
+
+    def test_area_name_is_resolved(self):
+        entities = [DeviceEntity("switch.a", "switch", "A", device_id="d1", area_id="a1")]
+        groups = group_by_device(entities, {"d1": {"name": "Gerät"}}, {"a1": "Keller"})
+        self.assertEqual(groups[0].area, "Keller")
 
 
 if __name__ == "__main__":

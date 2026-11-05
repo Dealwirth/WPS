@@ -11,9 +11,18 @@ from ._model import Device
 from ._spec import DeviceCategory, DeviceTypeSpec, RoleKind, RoleSpec, SettingSpec
 from .catalog import DEVICE_TYPES
 from .discover import suggest_roles
+from .registry import DeviceEntity, DeviceGroup, group_by_device
 from .strategies import DeviceAssessment, DeviceContext, assess
 
 TYPES_BY_ID: dict[str, DeviceTypeSpec] = {t.type_id: t for t in DEVICE_TYPES}
+
+
+def missing_required_roles(device: Device) -> list[str]:
+    """Rollen, die zwingend eine Entität brauchen, aber keine haben."""
+    spec = TYPES_BY_ID.get(device.type_id)
+    if spec is None:
+        return []
+    return [key for key in spec.required_roles if not device.roles.get(key)]
 
 
 def type_cards() -> list[dict[str, object]]:
@@ -95,6 +104,8 @@ __all__ = [
     "DeviceAssessment",
     "DeviceCategory",
     "DeviceContext",
+    "DeviceEntity",
+    "DeviceGroup",
     "DeviceTypeSpec",
     "RoleKind",
     "RoleSpec",
@@ -102,7 +113,9 @@ __all__ = [
     "assess",
     "clamp_device_settings",
     "device_view",
+    "group_by_device",
     "make_device",
+    "missing_required_roles",
     "suggest_roles",
     "type_cards",
 ]
