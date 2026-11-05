@@ -201,3 +201,23 @@ sudo docker run -d --name solarflow-test --network host \
 - **Schatten-Modus** ist die Standardbetriebsart: SolarFlow rechnet und zeigt
   den Vorschlag, schreibt aber nichts. Alte Automationen bleiben unangetastet.
 
+## Geräte-Store (ab 2.0.0)
+
+- Der Kern ist **gerätegetrieben**: `core/devices/` enthält Vorlagen
+  (`catalog.py`), Datenmodelle (`_spec.py`, `_model.py`), die reinen
+  Strategien (`strategies.py`) und die Erkennung (`discover.py`).
+- Ein **neues Gerät** = ein Eintrag in `DEVICE_TYPES` in `catalog.py`. Die
+  Strategie wählt das Verhalten: `surplus_switch`, `thermal_boost`,
+  `battery_reserve`, `climate_boost`.
+- Strategien sind **reine Funktionen** (kein HA-Import) und geben nur
+  *Vorschläge* zurück. Ob geschaltet wird, entscheidet allein das Gate in
+  `core/safety.py`.
+- Erkennung: Die Domäne allein reicht **nicht** – eine Rolle braucht
+  mindestens einen Keyword- oder Einheiten-Treffer (`discover._score`).
+- Beim Umstieg werden alte feste Quellen (`ww_temp_number`,
+  `ww_storage_sensor`) automatisch zu einem `heat_pump`-Gerät migriert
+  (`engine._migrate_legacy_sources`).
+- Schnittstelle der Oberfläche: `GET /api/device_types`, `POST /api/devices`,
+  `POST /api/device/update`, `POST /api/device/remove`,
+  `POST /api/device/discover`.
+

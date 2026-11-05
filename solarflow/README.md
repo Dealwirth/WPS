@@ -1,6 +1,7 @@
 # SolarFlow
 
-Sichere PV-Überschuss-Automatik für Wärmepumpe, Warmwasser und Laden – als
+Sichere PV-Überschuss-Automatik mit **Geräte-Store** – für Wärmepumpe,
+Warmwasser, Wallbox, Speicher, Poolpumpe und mehr – als
 Home-Assistant-**App (Add-on)**.
 
 SolarFlow schiebt Warmwasser, Heizung und Ladung in die Sonnenstunden – aber
@@ -18,10 +19,19 @@ bewusst auf **Aktiv** schaltest.
 
 ## Bedienung in 3 Schritten
 
-1. **Quellen** wählen (oder „Automatisch erkennen“) – Einspeisung, Warmwasser,
-   optional Wallbox und Heizung.
-2. **Einstellungen** prüfen und speichern.
+1. **Quellen** wählen (oder „Automatisch erkennen“) – Einspeisung, PV,
+   Netzbezug.
+2. Im Reiter **Geräte** aus dem Store ein Gerät hinzufügen und seine
+   Entitäten zuordnen (oder „Automatisch erkennen“ nutzen).
 3. Auf **Aktiv** schalten, wenn der Schatten-Modus plausible Vorschläge zeigt.
+
+## Geräte-Store
+
+Ein Gerät ist eine Vorlage aus dem Store plus die Entitäten deiner Anlage.
+SolarFlow kennt unter anderem: Wärmepumpe/Warmwasser, Heizstab, Klimaanlage,
+Wallbox, E-Auto-Laden, PV-Speicher, Poolpumpe, Bewässerung, Waschmaschine,
+Trockner, Geschirrspüler und freie Verbraucher. Jedes Gerät hat eigene
+Schwellen und lässt sich einzeln pausieren.
 
 ## Sicherheit
 

@@ -121,8 +121,8 @@ def evaluate_layers(ctx: SafetyContext) -> list[LayerStatus]:
         )
     )
 
-    # 5) Temperaturgrenzen
-    b_ok = WW_TEMP_ABS_MIN <= s.ww_normal_temp <= WW_TEMP_ABS_MAX and s.ww_boost_temp <= WW_TEMP_ABS_MAX
+    # 5) Temperaturgrenzen (Gerätegrenzen bleiben hart)
+    b_ok = ctx.device_min <= s.ww_normal_temp <= ctx.device_max and s.ww_boost_temp <= ctx.device_max
     out.append(
         LayerStatus(
             5,
@@ -130,7 +130,7 @@ def evaluate_layers(ctx: SafetyContext) -> list[LayerStatus]:
             LAYER_DEFS[4][1],
             LAYER_DEFS[4][2],
             "ok" if b_ok else "warn",
-            f"Boost {s.ww_boost_temp:.0f} °C ≤ Max {WW_TEMP_ABS_MAX:.0f} °C"
+            f"Grenzen {ctx.device_min:.0f}–{ctx.device_max:.0f} °C eingehalten"
             if b_ok
             else "Grenzen verletzt – werden geklemmt",
             "within limits" if b_ok else "violated – will be clamped",

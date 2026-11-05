@@ -1,8 +1,12 @@
-"""Regel-Laufzeit von SolarFlow (HA-unabhaengig bis auf den Client).
+"""Regel-Laufzeit von SolarFlow (HA-unabhängig bis auf den Client).
 
-Haelt Einstellungen, Zustandsmaschine, Protokoll und fuehrt – ausschliesslich
-ueber das Sicherheits-Gate – Schreibaktionen aus. Jede Ausfuehrung wird
-verifiziert und bei Fehlschlag sicher zurueckgenommen.
+Hält Einstellungen, Geräte-Store, Protokoll und führt – ausschließlich über
+das Sicherheits-Gate – Schreibaktionen aus. Jede Ausführung wird verifiziert
+und bei Fehlschlag sicher zurückgenommen.
+
+Der Kern ist **gerätegetrieben**: Für jedes eingerichtete Gerät bewertet die
+passende Strategie den PV-Überschuss und liefert Vorschläge. Erst das Gate
+entscheidet, ob geschaltet wird.
 """
 
 from __future__ import annotations
@@ -16,42 +20,42 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from core.limits import validate_settings
-from core.machine import Machine
-from core.models import Action, Decision, Mode, PlantState, Reading, Settings
-from core.modules import (
-    MODULES_BY_ID,
-    default_enabled_modules,
-    resolve_dependencies,
-    store_cards,
+from core.devices import (
+    TYPES_BY_ID,
+    Device,
+    DeviceContext,
+    assess,
+    clamp_device_settings,
+    device_view,
+    make_device,
+    suggest_roles,
+    type_cards,
 )
-from core.planner import evaluate
-from core.safety import SafetyContext, evaluate_layers
+from core.discovery import EntityInfo
+from core.limits import validate_settings
+from core.models import Action, Decision, Mode, PlantState, Reading, Settings
+from core.safety import SafetyContext, evaluate_layers, gate
 from ha_client import HomeAssistantClient
 
 _LOGGER = logging.getLogger("solarflow.engine")
 
 HARD_WW_MIN_TEMP = 10.0
-HARD_WW_MAX_TEMP = 60.0
+HARD_WW_MAX_TEMP = 90.0
 DEFAULT_AUDIT_LIMIT = 300
 
-#: Quelle-Schluessel -> (deutscher Name, erlaubte Domaenen)
+#: Globale Quelle-Schluessel -> (deutscher Name, erlaubte Domaenen)
 SOURCE_SPECS: dict[str, tuple[str, tuple[str, ...]]] = {
     "feed_in": ("Einspeisung ins Netz", ("sensor",)),
     "pv": ("PV-Leistung", ("sensor",)),
     "grid_import": ("Netzbezug", ("sensor",)),
-    "ww_water_heater": ("Warmwasser", ("water_heater", "climate")),
-    "ww_temp_number": ("WW-Solltemperatur", ("number",)),
-    "ww_storage_sensor": ("WW-Speichertemperatur", ("sensor",)),
-    "ww_hysteresis_number": ("WW-Hysterese", ("number",)),
-    "heating_climate": ("Heizung", ("climate",)),
-    "wallbox": ("Wallbox", ("switch", "sensor", "select", "number")),
-    "ev": ("Fahrzeug", ("sensor", "switch", "number", "lock")),
 }
+
+#: Rollen, deren Entität einen Sollwert trägt (Temperatur).
+_SETPOINT_ROLES = ("setpoint", "climate")
 
 
 class SolarFlowEngine:
-    """Zustand und Ausfuehrung fuer das Add-on."""
+    """Zustand und Ausführung für das Add-on."""
 
     def __init__(self, client: HomeAssistantClient, data_dir: str) -> None:
         self.client = client
@@ -59,15 +63,17 @@ class SolarFlowEngine:
         self.state_file = self.data_dir / "state.json"
         self.sources: dict[str, str] = {}
         self.settings = Settings()
-        self.machine = Machine()
-        self.enabled_modules: set[str] = set(default_enabled_modules())
+        self.devices: list[Device] = []
         self.emergency_stop = False
         self.last_decision: Decision | None = None
         self.last_layers: list = []
+        self.last_assessments: list = []
         self.previous_feed_in: float | None = None
         self.audit: list[dict[str, Any]] = []
         self.last_error: str | None = None
         self.last_good_temp: float | None = None
+        #: Laufzeit je Gerät: since (Ein-Zeitpunkt), last_off (für Mindestpause).
+        self.device_runtime: dict[str, dict[str, float]] = {}
         self._lock = asyncio.Lock()
         self._wake = asyncio.Event()
         self._last_seen: dict[str, str] = {}
@@ -79,10 +85,15 @@ class SolarFlowEngine:
         """Bei jeder Aenderung einer Quell-Entitaet sofort einen Zyklus anstossen."""
         self.client.add_state_callback(self._on_states)
 
+    def _watched_entities(self) -> list[str]:
+        ids = [v for v in self.sources.values() if v]
+        for d in self.devices:
+            ids.extend(v for v in d.roles.values() if v)
+        return ids
+
     def _on_states(self, states: dict[str, dict]) -> None:
-        watched = [v for v in self.sources.values() if v]
         changed = False
-        for eid in watched:
+        for eid in self._watched_entities():
             cur = (states.get(eid) or {}).get("state")
             if self._last_seen.get(eid) != cur:
                 self._last_seen[eid] = cur
@@ -107,29 +118,64 @@ class SolarFlowEngine:
             except Exception:  # defensiv
                 data = {}
         opts = options or {}
-        # Add-on-Optionen gelten nur beim allerersten Start als Vorbelegung.
         if not data:
             src = opts.get("sources") or {}
             if isinstance(src, dict):
                 self.sources = {k: str(v) for k, v in src.items() if k in SOURCE_SPECS and v}
             if isinstance(opts.get("settings"), dict):
                 self.settings = Settings.from_dict(opts["settings"])
-            if isinstance(opts.get("enabled_modules"), list) and opts["enabled_modules"]:
-                self.enabled_modules = set(default_enabled_modules()) | {str(m) for m in opts["enabled_modules"]}
+            devices = opts.get("devices")
+            if isinstance(devices, list):
+                self.devices = self._load_devices(devices)
+            else:
+                self.devices = self._migrate_legacy_sources()
         else:
             self.sources = {k: str(v) for k, v in (data.get("sources") or {}).items() if k in SOURCE_SPECS}
             self.settings = Settings.from_dict(data.get("settings"))
-            mods = data.get("enabled_modules")
-            if isinstance(mods, list) and mods:
-                self.enabled_modules = set(default_enabled_modules()) | {str(m) for m in mods}
             self.emergency_stop = bool(data.get("emergency_stop", False))
+            self.devices = self._load_devices(data.get("devices") or [])
+            if not self.devices:
+                self.devices = self._migrate_legacy_sources(data)
+        for d in self.devices:
+            for n in clamp_device_settings(d):
+                self.log("warn", f"{d.name}: {n}")
         self.settings, _ = validate_settings(self.settings)
+
+    def _load_devices(self, raw: list) -> list[Device]:
+        out: list[Device] = []
+        for item in raw:
+            if not isinstance(item, dict):
+                continue
+            dev = Device.from_dict(item)
+            if dev.type_id in TYPES_BY_ID:
+                out.append(dev)
+        return out
+
+    def _migrate_legacy_sources(self, data: dict[str, Any] | None = None) -> list[Device]:
+        """Baut aus den alten festen Quellen ein Wärmepumpen-Gerät (Umstieg)."""
+        src = dict(self.sources)
+        if data:
+            src = {k: str(v) for k, v in (data.get("sources") or {}).items() if v}
+        setpoint = src.get("ww_water_heater") or src.get("ww_temp_number") or ""
+        storage = src.get("ww_storage_sensor") or ""
+        power = src.get("pv") or ""
+        if not (setpoint or storage):
+            return []
+        roles: dict[str, str] = {}
+        if storage:
+            roles["storage"] = storage
+        if setpoint:
+            roles["setpoint"] = setpoint
+        if power:
+            roles["power"] = power
+        dev = make_device("heat_pump", name="Wärmepumpe", roles=roles)
+        return [dev] if dev else []
 
     def save(self) -> None:
         payload = {
             "sources": self.sources,
             "settings": self.settings.as_dict(),
-            "enabled_modules": sorted(self.enabled_modules),
+            "devices": [d.as_dict() for d in self.devices],
             "emergency_stop": self.emergency_stop,
         }
         try:
@@ -167,9 +213,27 @@ class SolarFlowEngine:
             raw=st.get("state"),
         )
 
-    def _device_bounds(self) -> tuple[float, float]:
+    def _state_of(self, entity_id: str | None) -> str | None:
+        if not entity_id:
+            return None
+        st = self.client.state(entity_id)
+        return st.get("state") if st else None
+
+    def _current_setpoint(self, entity_id: str | None) -> float | None:
+        st = self.client.state(entity_id)
+        if st is None:
+            return None
+        value = st.get("attributes", {}).get("temperature", st.get("state"))
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return None
+
+    def _device_bounds(self, device: Device) -> tuple[float, float]:
+        """Grenzen des Geräts aus den Attributen (Fallback: sichere Standardwerte)."""
         lo, hi = HARD_WW_MIN_TEMP, HARD_WW_MAX_TEMP
-        st = self.client.state(self.sources.get("ww_water_heater"))
+        entity = device.roles.get("setpoint") or device.roles.get("climate")
+        st = self.client.state(entity) if entity else None
         if st is not None:
             a = st.get("attributes", {})
             try:
@@ -181,15 +245,12 @@ class SolarFlowEngine:
                 pass
         return lo, hi
 
-    def _current_setpoint(self, entity_id: str | None) -> float | None:
-        st = self.client.state(entity_id)
-        if st is None:
-            return None
-        value = st.get("attributes", {}).get("temperature", st.get("state"))
-        try:
-            return float(value)
-        except (ValueError, TypeError):
-            return None
+    def _primary_bounds(self) -> tuple[float, float]:
+        for d in self.devices:
+            spec = TYPES_BY_ID.get(d.type_id)
+            if d.enabled and spec and spec.strategy == "thermal_boost":
+                return self._device_bounds(d)
+        return HARD_WW_MIN_TEMP, HARD_WW_MAX_TEMP
 
     def log(self, level: str, text: str) -> None:
         self.audit.insert(0, {"t": datetime.now().strftime("%H:%M:%S"), "level": level, "text": text})
@@ -204,6 +265,70 @@ class SolarFlowEngine:
         self.save()
 
     # ------------------------------------------------------------------ #
+    # Geräte-Store
+    # ------------------------------------------------------------------ #
+    def add_device(self, type_id: str, *, name: str = "", roles: dict[str, str] | None = None) -> Device | None:
+        dev = make_device(type_id, name=name, roles=roles)
+        if dev is None:
+            return None
+        self.devices.append(dev)
+        self._last_seen.clear()
+        self.save()
+        return dev
+
+    def update_device(self, device_id: str, patch: dict[str, Any]) -> Device | None:
+        dev = next((d for d in self.devices if d.id == device_id), None)
+        if dev is None:
+            return None
+        if patch.get("name"):
+            dev.name = str(patch["name"])
+        if "enabled" in patch:
+            dev.enabled = bool(patch["enabled"])
+        if isinstance(patch.get("roles"), dict):
+            for k, v in patch["roles"].items():
+                if v:
+                    dev.roles[str(k)] = str(v)
+                else:
+                    dev.roles.pop(str(k), None)
+        if isinstance(patch.get("settings"), dict):
+            for k, v in patch["settings"].items():
+                try:
+                    dev.settings[str(k)] = float(v)
+                except (TypeError, ValueError):
+                    continue
+        for n in clamp_device_settings(dev):
+            self.log("warn", f"{dev.name}: {n}")
+        self._last_seen.clear()
+        self.save()
+        return dev
+
+    def remove_device(self, device_id: str) -> bool:
+        before = len(self.devices)
+        self.devices = [d for d in self.devices if d.id != device_id]
+        self.device_runtime.pop(device_id, None)
+        if len(self.devices) != before:
+            self.save()
+            return True
+        return False
+
+    def discover_device(self, type_id: str, name_hint: str = "") -> dict[str, str]:
+        spec = TYPES_BY_ID.get(type_id)
+        if spec is None:
+            return {}
+        infos = [
+            EntityInfo(
+                entity_id=e["entity_id"],
+                domain=e["domain"],
+                name=e.get("name") or "",
+                device_class=e.get("device_class"),
+                unit=e.get("unit"),
+                state=e.get("state"),
+            )
+            for e in self.client.entity_catalog()
+        ]
+        return {s.key: (s.entity_id or "") for s in suggest_roles(spec, infos, hint=name_hint)}
+
+    # ------------------------------------------------------------------ #
     # Regelzyklus
     # ------------------------------------------------------------------ #
     async def async_run_cycle(self) -> Decision:
@@ -216,51 +341,88 @@ class SolarFlowEngine:
                 _LOGGER.exception("SolarFlow Zyklus fehlgeschlagen")
                 return Decision(state=PlantState.NORMAL, blocked=True, reason_de="Fehler – sicherer Zustand")
 
+    def _surplus_ok(self, feed_in: Reading) -> bool:
+        from core.quality import POWER_MAX_W, POWER_MIN_W, check_freshness, check_jump, check_value
+
+        ok_fresh, _, _ = check_freshness(feed_in, self.settings.sensor_max_age_s)
+        ok_range, _, _ = check_value(feed_in.value, lo=POWER_MIN_W, hi=POWER_MAX_W)
+        ok_jump, _, _ = check_jump(feed_in.value, self.previous_feed_in)
+        return ok_fresh and ok_range and ok_jump
+
+    def _build_context(self, device: Device, feed_in: Reading, surplus_ok: bool, now: float) -> DeviceContext:
+        spec = TYPES_BY_ID[device.type_id]
+        values: dict[str, Reading] = {}
+        states: dict[str, str] = {}
+        for role_key, entity in device.roles.items():
+            if not entity:
+                continue
+            if role_key in _SETPOINT_ROLES:
+                values[role_key] = Reading(entity_id=entity, value=self._current_setpoint(entity), available=True)
+            else:
+                r = self._read(entity)
+                if r is not None:
+                    values[role_key] = r
+            states[role_key] = self._state_of(entity) or ""
+        rt = self.device_runtime.get(device.id, {})
+        runtime_s = (now - rt["since"]) if rt.get("since") else 0.0
+        return DeviceContext(
+            device=device,
+            spec=spec,
+            feed_in_w=feed_in.value if feed_in.is_number else None,
+            surplus_ok=surplus_ok,
+            values=values,
+            states=states,
+            now=now,
+            runtime_s=runtime_s,
+            grid_import_w=(self._read(self.sources.get("grid_import")) or Reading("", None)).value,
+        )
+
+    def _track_runtime(self, device: Device, was_on: bool, is_on: bool, now: float) -> None:
+        rt = self.device_runtime.setdefault(device.id, {})
+        if is_on and not was_on:
+            rt["since"] = now
+        elif not is_on:
+            if was_on:
+                rt["last_off"] = now
+            rt.pop("since", None)
+
     async def _cycle(self) -> Decision:
         now = time.monotonic()
-        feed_in = self._read(self.sources.get("feed_in"))
-        storage = self._read(self.sources.get("ww_storage_sensor"))
+        feed_in = self._read(self.sources.get("feed_in")) or Reading(entity_id="", value=None, available=False)
         grid = self._read(self.sources.get("grid_import"))
-        ww_entity = self.sources.get("ww_water_heater") or self.sources.get("ww_temp_number") or ""
+        surplus_ok = self._surplus_ok(feed_in)
 
-        if feed_in is None:
-            feed_in = Reading(entity_id="", value=None, available=False)
+        all_actions: list[Action] = []
+        self.last_assessments = []
+        steps: list[tuple[str, str]] = []
 
-        dmin, dmax = self._device_bounds()
-        current_temp = self._current_setpoint(ww_entity)
+        for device in self.devices:
+            if not device.enabled:
+                continue
+            ctx = self._build_context(device, feed_in, surplus_ok, now)
+            assessment = assess(ctx)
+            self.last_assessments.append(assessment)
+            all_actions.extend(assessment.actions)
+            was_on = ctx.states.get("switch") == "on"
+            is_on = was_on
+            if any(a.service == "switch.turn_on" for a in assessment.actions):
+                is_on = True
+            if any(a.service == "switch.turn_off" for a in assessment.actions):
+                is_on = False
+            self._track_runtime(device, was_on, is_on, now)
+            if assessment.reason_de:
+                steps.append(("info", f"{assessment.name}: {assessment.reason_de}"))
 
-        wallbox_entity = self.sources.get("wallbox")
-        wallbox_on: bool | None = None
-        if wallbox_entity:
-            wb = self.client.state(wallbox_entity)
-            if wb is not None:
-                wallbox_on = wb.get("state") == "on"
-
-        decision = evaluate(
-            machine=self.machine,
-            settings=self.settings,
-            feed_in=feed_in,
-            storage=storage,
-            grid_import=grid,
-            now=now,
-            previous_feed_in=self.previous_feed_in,
-            device_min=dmin,
-            device_max=dmax,
-            ww_entity=ww_entity,
-            emergency_stop=self.emergency_stop,
-            current_temp=current_temp,
-            enabled_modules=self.enabled_modules,
-            wallbox_entity=wallbox_entity,
-            wallbox_on=wallbox_on,
-        )
         self.previous_feed_in = feed_in.value if feed_in.is_number else self.previous_feed_in
-        self.last_decision = decision
 
+        if not surplus_ok:
+            steps.append(("blocked", "Keine gültigen Überschussdaten – sicherer Zustand."))
+
+        dmin, dmax = self._primary_bounds()
         ctx = SafetyContext(
             feed_in=feed_in,
             settings=self.settings,
             now=now,
-            storage=storage,
             grid_import=grid,
             previous_feed_in=self.previous_feed_in,
             device_min=dmin,
@@ -270,20 +432,43 @@ class SolarFlowEngine:
         )
         self.last_layers = evaluate_layers(ctx)
 
-        for status, text in decision.steps:
+        allowed, blocked_reasons = gate(all_actions, ctx)
+        blocked = bool(blocked_reasons) or bool(all_actions and not allowed)
+        for r in blocked_reasons:
+            steps.append(("blocked", r))
+
+        state = PlantState.BOOST if any(a.active for a in self.last_assessments) else PlantState.NORMAL
+        reason = self._summary_reason(state, blocked)
+        decision = Decision(
+            state=state,
+            actions=allowed,
+            blocked=blocked,
+            reason_de=reason,
+            reason_en=reason,
+            steps=steps,
+        )
+        self.last_decision = decision
+
+        for status, text in steps:
             if status in ("warn", "blocked"):
                 self.log("warn" if status == "warn" else "err", text)
 
-        if decision.actions and not decision.blocked:
-            await self._execute(decision.actions)
-        elif (
-            (self.settings.mode == Mode.OFF or self.emergency_stop)
-            and self.machine.state != PlantState.NORMAL
-        ):
-            # Nur bei Aus/Not-Aus gilt der Ruhezustand. Im Schatten-Modus bleibt
-            # der Vorschlag sichtbar (blocked), damit man ihn pruefen kann.
-            self.machine.apply_inhibit(now, "gesperrt")
+        if allowed and not blocked:
+            await self._execute(allowed)
         return decision
+
+    def _summary_reason(self, state: PlantState, blocked: bool) -> str:
+        active = [a for a in self.last_assessments if a.active]
+        if not self.devices:
+            return "Noch keine Geräte eingerichtet – im Store Geräte hinzufügen."
+        if blocked:
+            if active:
+                return f"{len(active)} Gerät(e) möchten schalten – gesperrt (Schatten/Not-Aus/Daten)."
+            return "Keine Schaltung – Sicherheit hält."
+        if state == PlantState.BOOST:
+            names = ", ".join(a.name for a in active[:3])
+            return f"Überschuss aktiv für: {names}."
+        return "Kein Überschuss – alles im Ruhezustand."
 
     async def _execute(self, actions: list[Action]) -> None:
         for a in actions:
@@ -317,23 +502,30 @@ class SolarFlowEngine:
             pass
 
     async def _fallback_to_normal(self) -> None:
-        ww = self.sources.get("ww_water_heater") or self.sources.get("ww_temp_number")
-        if not ww:
-            return
-        domain = ww.split(".")[0]
-        try:
-            if domain == "water_heater":
-                await self.client.call_service(
-                    "water_heater", "set_temperature", {"temperature": self.settings.ww_normal_temp}, entity_id=ww
-                )
-            else:
-                await self.client.call_service(
-                    "number", "set_value", {"value": self.settings.ww_normal_temp}, entity_id=ww
-                )
-            self.machine.state = PlantState.NORMAL
-            self.log("warn", "Not-Fallback: zurueck auf Normaltemperatur.")
-        except Exception as err:  # defensiv
-            self.log("err", f"Not-Fallback fehlgeschlagen: {err}")
+        """Nach einem Schreibfehler: alle Sollwerte sicher auf Normal setzen."""
+        for device in self.devices:
+            spec = TYPES_BY_ID.get(device.type_id)
+            if spec is None or spec.strategy != "thermal_boost":
+                continue
+            entity = device.roles.get("setpoint") or device.roles.get("climate")
+            if not entity:
+                continue
+            normal = device.settings.get("normal_temp", 52.0)
+            domain = entity.split(".")[0]
+            try:
+                if domain == "water_heater":
+                    await self.client.call_service(
+                        "water_heater", "set_temperature", {"temperature": normal}, entity_id=entity
+                    )
+                elif domain == "climate":
+                    await self.client.call_service(
+                        "climate", "set_temperature", {"temperature": normal}, entity_id=entity
+                    )
+                else:
+                    await self.client.call_service("number", "set_value", {"value": normal}, entity_id=entity)
+                self.log("warn", f"Not-Fallback: {device.name} auf Normal.")
+            except Exception as err:  # defensiv
+                self.log("err", f"Not-Fallback fehlgeschlagen ({device.name}): {err}")
 
     # ------------------------------------------------------------------ #
     # Aenderungen von aussen
@@ -364,17 +556,6 @@ class SolarFlowEngine:
         await self.async_run_cycle()
         return notes
 
-    async def set_module(self, module_id: str, enabled: bool) -> tuple[bool, str]:
-        if enabled:
-            self.enabled_modules = resolve_dependencies(self.enabled_modules, module_id=module_id)
-        else:
-            spec = MODULES_BY_ID.get(module_id)
-            if spec is not None and not spec.optional:
-                return False, "Das Grundsystem kann nicht deaktiviert werden."
-            self.enabled_modules.discard(module_id)
-        self.save()
-        return True, ""
-
     async def set_emergency(self, on: bool) -> None:
         self.emergency_stop = bool(on)
         if on:
@@ -384,33 +565,29 @@ class SolarFlowEngine:
         self.save()
         await self.async_run_cycle()
 
-    async def force_boost(self, on: bool) -> None:
-        self.settings.force_boost = bool(on)
-        self.log("warn" if on else "ok", "Manueller Boost " + ("erzwungen." if on else "aufgehoben."))
-        self.save()
-        await self.async_run_cycle()
-
     # ------------------------------------------------------------------ #
     # Snapshot fuer die Oberflaeche
     # ------------------------------------------------------------------ #
     def snapshot(self) -> dict[str, Any]:
         feed_in = self._read(self.sources.get("feed_in"))
-        storage = self._read(self.sources.get("ww_storage_sensor"))
         d = self.last_decision
+        primary_storage = None
+        for dev in self.devices:
+            if dev.roles.get("storage"):
+                primary_storage = self._read(dev.roles["storage"])
+                break
         return {
             "mode": str(self.settings.mode),
-            "state": str(self.machine.state),
+            "state": str(d.state) if d else "normal",
             "emergency_stop": self.emergency_stop,
             "blocked": bool(d.blocked) if d else False,
             "reason_de": d.reason_de if d else "",
             "steps": [{"status": s, "text": t} for s, t in (d.steps if d else [])],
             "feed_in_w": feed_in.value if feed_in else None,
             "feed_in_age_s": feed_in.age_s if feed_in else None,
-            "storage_temp": storage.value if storage and storage.is_number else None,
+            "storage_temp": primary_storage.value if primary_storage and primary_storage.is_number else None,
             "grid_import_w": (self._read(self.sources.get("grid_import")) or Reading("", None)).value,
             "settings": self.settings.as_dict(),
-            "machine_changes": self.machine.changes,
-            "runtime_s": self.machine.runtime_s(time.monotonic()),
             "layers": [
                 {
                     "idx": ly.idx,
@@ -423,7 +600,9 @@ class SolarFlowEngine:
                 }
                 for ly in self.last_layers
             ],
-            "modules": store_cards(self.enabled_modules),
+            "device_types": type_cards(),
+            "devices": [device_view(d) for d in self.devices],
+            "assessments": [a.as_dict() for a in self.last_assessments],
             "audit": self.audit[:60],
             "sources": dict(self.sources),
             "source_specs": {k: {"label": v[0], "domains": list(v[1])} for k, v in SOURCE_SPECS.items()},

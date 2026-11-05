@@ -19,7 +19,6 @@ from pathlib import Path
 from typing import Any
 
 from aiohttp import web
-from core.discovery import EntityInfo, suggest
 from engine import SolarFlowEngine
 from ha_client import HomeAssistantClient
 
@@ -35,32 +34,6 @@ def _options() -> dict[str, Any]:
         return json.loads(Path(path).read_text())
     except Exception:
         return {}
-
-
-def _suggestions(client: HomeAssistantClient) -> list[dict[str, Any]]:
-    infos = [
-        EntityInfo(
-            entity_id=e["entity_id"],
-            domain=e["domain"],
-            name=e.get("name") or "",
-            device_class=e.get("device_class"),
-            unit=e.get("unit"),
-            state=e.get("state"),
-        )
-        for e in client.entity_catalog()
-    ]
-    return [
-        {
-            "role": s.role,
-            "label_de": s.label_de,
-            "label_en": s.label_en,
-            "entity_id": s.entity_id,
-            "confidence": round(s.confidence, 2),
-            "note_de": s.note_de,
-            "candidates": s.candidates,
-        }
-        for s in suggest(infos)
-    ]
 
 
 async def create_app() -> web.Application:
@@ -81,12 +54,10 @@ async def create_app() -> web.Application:
                 await engine.async_run_cycle()
             except Exception:  # defensiv
                 _LOGGER.debug("Zyklus fehlgeschlagen", exc_info=True)
-            # Sofort weiter, wenn sich eine Quelle aendert – sonst alle 15 s.
             await engine.wait_for_change(timeout=15)
 
     async def on_startup(_app: web.Application) -> None:
         await client.start()
-        # Kurz warten, damit der erste Snapshot echte Werte hat.
         await client.wait_connected(timeout=25.0)
         engine.bind()
         _app["cycle_task"] = asyncio.create_task(cycle_loop())
@@ -124,7 +95,72 @@ async def create_app() -> web.Application:
         return web.json_response(client.entity_catalog())
 
     async def suggestions(_req: web.Request) -> web.Response:
-        return web.json_response(_suggestions(client))
+        """Vorschläge für die globalen Quellen (Einspeisung/PV/Netzbezug)."""
+        from core.discovery import EntityInfo, suggest
+
+        infos = [
+            EntityInfo(
+                entity_id=e["entity_id"],
+                domain=e["domain"],
+                name=e.get("name") or "",
+                device_class=e.get("device_class"),
+                unit=e.get("unit"),
+                state=e.get("state"),
+            )
+            for e in client.entity_catalog()
+        ]
+        wanted = set(engine.sources) | {"feed_in", "pv", "grid_import"}
+        return web.json_response(
+            [
+                {
+                    "role": s.role,
+                    "label_de": s.label_de,
+                    "entity_id": s.entity_id,
+                    "confidence": round(s.confidence, 2),
+                    "candidates": s.candidates,
+                }
+                for s in suggest(infos)
+                if s.role in wanted
+            ]
+        )
+
+    async def device_types(_req: web.Request) -> web.Response:
+        return web.json_response(engine.device_types())
+
+    async def add_device(req: web.Request) -> web.Response:
+        body = await req.json()
+        dev = engine.add_device(
+            str(body.get("type_id", "")),
+            name=str(body.get("name", "")),
+            roles={str(k): str(v) for k, v in (body.get("roles") or {}).items()},
+        )
+        if dev is None:
+            raise web.HTTPBadRequest(text="unbekannter Geraetetyp")
+        engine.log("ok", f"Gerät hinzugefügt: {dev.name}.")
+        await engine.async_run_cycle()
+        return web.json_response(engine.snapshot())
+
+    async def update_device(req: web.Request) -> web.Response:
+        body = await req.json()
+        dev = engine.update_device(str(body.get("id", "")), dict(body))
+        if dev is None:
+            raise web.HTTPNotFound(text="Geraet nicht gefunden")
+        await engine.async_run_cycle()
+        return web.json_response(engine.snapshot())
+
+    async def remove_device(req: web.Request) -> web.Response:
+        body = await req.json()
+        ok = engine.remove_device(str(body.get("id", "")))
+        if not ok:
+            raise web.HTTPNotFound(text="Geraet nicht gefunden")
+        engine.log("warn", "Gerät entfernt.")
+        await engine.async_run_cycle()
+        return web.json_response(engine.snapshot())
+
+    async def discover_device(req: web.Request) -> web.Response:
+        body = await req.json()
+        roles = engine.discover_device(str(body.get("type_id", "")), str(body.get("name", "")))
+        return web.json_response({"roles": roles})
 
     async def set_mode(req: web.Request) -> web.Response:
         body = await req.json()
@@ -140,21 +176,9 @@ async def create_app() -> web.Application:
         notes = await engine.set_settings(dict(values))
         return web.json_response({"notes": notes, "snapshot": engine.snapshot()})
 
-    async def set_module(req: web.Request) -> web.Response:
-        body = await req.json()
-        ok, msg = await engine.set_module(str(body.get("module_id")), bool(body.get("enabled")))
-        if not ok:
-            raise web.HTTPBadRequest(text=msg)
-        return web.json_response(engine.snapshot())
-
     async def set_emergency(req: web.Request) -> web.Response:
         body = await req.json()
         await engine.set_emergency(bool(body.get("on")))
-        return web.json_response(engine.snapshot())
-
-    async def set_boost(req: web.Request) -> web.Response:
-        body = await req.json()
-        await engine.force_boost(bool(body.get("on")))
         return web.json_response(engine.snapshot())
 
     async def set_sources(req: web.Request) -> web.Response:
@@ -172,11 +196,14 @@ async def create_app() -> web.Application:
     app.router.add_get("/api/snapshot", snapshot)
     app.router.add_get("/api/entities", entities)
     app.router.add_get("/api/suggest", suggestions)
+    app.router.add_get("/api/device_types", device_types)
+    app.router.add_post("/api/devices", add_device)
+    app.router.add_post("/api/device/update", update_device)
+    app.router.add_post("/api/device/remove", remove_device)
+    app.router.add_post("/api/device/discover", discover_device)
     app.router.add_post("/api/mode", set_mode)
     app.router.add_post("/api/settings", set_settings)
-    app.router.add_post("/api/module", set_module)
     app.router.add_post("/api/emergency", set_emergency)
-    app.router.add_post("/api/boost", set_boost)
     app.router.add_post("/api/sources", set_sources)
     app.router.add_post("/api/cycle", run_cycle)
 

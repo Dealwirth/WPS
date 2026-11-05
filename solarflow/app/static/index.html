@@ -6,7 +6,7 @@
 <title>SolarFlow</title>
 <style>
   :root{
-    --amber:#ffb020; --coral:#ff6b4a; --violet:#7b5cff; --teal:#12c6a5; --sky:#3aa0ff;
+    --amber:#ffb020; --coral:#ff6b4a; --violet:#7b5cff; --teal:#12c6a5; --sky:#3aa0ff; --pink:#ff5ea8;
     --ink:#eef1ff; --muted:rgba(238,241,255,.62); --card:rgba(255,255,255,.055);
     --line:rgba(255,255,255,.10); --ok:#12c6a5; --warn:#ffb020; --err:#ff5d5d;
   }
@@ -99,7 +99,7 @@
   .primary{margin-top:16px;background:linear-gradient(135deg,var(--teal),var(--violet));color:#fff;font-weight:700;padding:12px 18px}
   .srcline{display:grid;grid-template-columns:210px 1fr;gap:12px;align-items:center;margin:9px 0}
   .srcline label{font-size:13px}
-  select,input[type=text]{width:100%;padding:9px 10px;border-radius:10px;border:1px solid var(--line);
+  select,input[type=text],input[type=number]{width:100%;padding:9px 10px;border-radius:10px;border:1px solid var(--line);
     background:rgba(255,255,255,.06);color:var(--ink);font:inherit}
   .src{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;background:rgba(255,255,255,.04);padding:8px 10px;border-radius:10px;margin:5px 0}
   .src code{color:var(--muted)}
@@ -113,6 +113,42 @@
   .toast.show{opacity:1}
   .hint{font-size:12px;color:var(--muted);margin:6px 0 0;line-height:1.4}
   @media (max-width:780px){.hero{grid-template-columns:1fr}.srow,.srcline{grid-template-columns:1fr}}
+
+  /* --- Geräte-Store --- */
+  .devices{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+  .dev{background:var(--card);border:1px solid rgba(255,255,255,.09);border-radius:18px;padding:14px;position:relative;overflow:hidden}
+  .dev.off{opacity:.55}
+  .dev::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:linear-gradient(90deg,var(--teal),var(--violet))}
+  .dev.st-heating::before{background:linear-gradient(90deg,var(--amber),var(--coral))}
+  .dev.st-charging::before{background:linear-gradient(90deg,var(--teal),var(--sky))}
+  .dev.st-blocked::before{background:linear-gradient(90deg,#ff5d5d,#a12)}
+  .dev.st-holding::before{background:linear-gradient(90deg,var(--violet),var(--pink))}
+  .dev-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .dev-ico{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:20px;
+    background:linear-gradient(135deg,rgba(18,198,165,.25),rgba(123,92,255,.25))}
+  .dev-name{font-weight:700;font-size:14px;flex:1}
+  .dev-type{font-size:11px;color:var(--muted)}
+  .dev-state{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;
+    padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.09)}
+  .dev-reason{font-size:12px;color:rgba(238,241,255,.82);margin:8px 0;line-height:1.35;min-height:32px}
+  .dev-det{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .pill{font-size:11px;background:rgba(255,255,255,.07);padding:3px 8px;border-radius:8px;font-variant-numeric:tabular-nums}
+  .dev-acts{display:flex;gap:8px;align-items:center}
+  .dev-acts button{padding:7px 11px;font-size:12px;border-radius:10px}
+  .card-tile{cursor:pointer;text-align:left}
+  .card-tile:hover{border-color:rgba(18,198,165,.5)}
+  .store-cats{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}
+  .store-cats button{padding:7px 12px;font-size:12.5px;border-radius:999px;background:rgba(255,255,255,.06)}
+  .store-cats button.sel{background:linear-gradient(135deg,var(--amber),var(--coral));color:#241300;font-weight:600}
+  .modal{position:fixed;inset:0;background:rgba(6,9,24,.72);backdrop-filter:blur(4px);display:grid;place-items:center;z-index:50;padding:16px}
+  .modal .box{width:min(680px,100%);max-height:88vh;overflow:auto;background:linear-gradient(160deg,#141a3d,#0c1130);
+    border:1px solid var(--line);border-radius:20px;padding:20px}
+  .modal h3{margin:0 0 4px;font-size:18px}
+  .modal .mh{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .role-row{display:grid;grid-template-columns:180px 1fr;gap:10px;align-items:center;margin:8px 0}
+  .role-row label{font-size:12.5px}.role-row .req{color:var(--coral);font-size:11px}
+  .modal-foot{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+  .empty{padding:26px;text-align:center;border:1px dashed var(--line);border-radius:16px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -124,36 +160,46 @@ const T={
  de:{title:"SolarFlow",sub:"Wärme und Laden in die Sonne schieben – sicher.",
    emergency:"NOT-AUS",reset:"Not-Aus aufheben",feedin:"Einspeisung",storage:"Speicher",
    changed:"Umschaltungen",off:"Aus",offHint:"Nur Schutz und Anzeige.",shadow:"Schatten",shadowHint:"Beobachten und vorschlagen, nicht schalten.",
-   active:"Aktiv",activeHint:"Automatik scharf, Grenzen bleiben aktiv.",layers:"Schutz-Ebenen",store:"Module",
+   active:"Aktiv",activeHint:"Automatik scharf, Grenzen bleiben aktiv.",layers:"Schutz-Ebenen",store:"Geräte",
    settings:"Einstellungen",sources:"Quellen",log:"Protokoll",why:"Warum dieser Zustand?",normal:"Normal",boost:"Überschuss",
    mandatory:"Pflicht",saved:"Gespeichert",loading:"SolarFlow lädt …",ok:"in Ordnung",warn:"Warnung",blocked:"Gesperrt",activeLayer:"aktiv",
-   grpBase:"Grundwerte",grpWw:"Warmwasser",grpWallbox:"Wallbox",grpHeating:"Heizung",grpForecast:"Prognose",grpSafety:"Sicherheit",
+   grpBase:"Grundwerte",grpForecast:"Prognose",grpSafety:"Sicherheit",
    feedOn:"Boost ein ab (W)",feedOff:"Boost aus ab (W)",minRun:"Mindestlaufzeit (min)",minPause:"Mindestpause (min)",
-   boostTemp:"Boost-Temperatur (°C)",normalTemp:"Normaltemperatur (°C)",minTemp:"Mindesttemperatur (°C)",hygieneTemp:"Hygiene (°C)",wwHyst:"Bedarf-Hysterese (K)",
-   wallboxOn:"Laden ein ab (W)",wallboxOff:"Laden aus ab (W)",wallboxMinA:"Mindeststrom (A)",heatingShift:"Vorheizen (°C)",forecastHorizon:"Horizont (h)",
-   maxAge:"Max. Sensor-Alter (s)",maxGrid:"Max. Netzbezug (W)",verify:"Schreib-Verifikation",save:"Speichern",
+   forecastHorizon:"Horizont (h)",maxAge:"Max. Sensor-Alter (s)",maxGrid:"Max. Netzbezug (W)",verify:"Schreib-Verifikation",save:"Speichern",
    detect:"Automatisch erkennen",savedSrc:"Quellen gespeichert",connected:"Verbunden",disconnected:"Getrennt",
    noData:"Keine Daten – bitte Quellen prüfen.",allOk:"Alles in Ordnung.",confident:"sicher",guess:"Vorschlag",pick:"– bitte wählen –",
    setTo:"auf",srcHint:"Wähle die Entitäten aus deinem Home Assistant. „Automatisch erkennen“ füllt sichere Vorschläge ein.",
-   modulesHint:"Anzeige- und Schutzmodule sind an. Schaltende Zusatzmodule gibst du bewusst frei.",logEmpty:"Noch keine Ereignisse."},
+   logEmpty:"Noch keine Ereignisse.",
+   storeHint:"Wähle ein Gerät aus deiner Anlage und ordne die Entitäten zu. SolarFlow erkennt passende Entitäten automatisch.",
+   addDevice:"Gerät hinzufügen",myDevices:"Meine Geräte",noDevices:"Noch keine Geräte. Wähle unten einen Typ aus dem Store.",
+   allCats:"Alle",cat_heat:"Wärme",cat_electric:"Strom",cat_mobility:"Mobilität",cat_storage:"Speicher",cat_generic:"Sonstiges",
+   edit:"Bearbeiten",remove:"Entfernen",on:"an",offState:"aus",enabled:"Aktiv",disabled:"Pausiert",
+   rolePick:"– bitte wählen –",name:"Name",discover:"✨ Automatisch erkennen",save2:"Übernehmen",cancel:"Abbrechen",
+   st_idle:"Bereit",st_charging:"Lädt",st_heating:"Heizt",st_holding:"Hält",st_ready:"Bereit",st_blocked:"Gesperrt",
+   removeQ:"Dieses Gerät wirklich entfernen?",req:"Pflicht"},
  en:{title:"SolarFlow",sub:"Push heat and charging into the sun – safely.",
    emergency:"EMERGENCY STOP",reset:"Reset emergency",feedin:"Feed-in",storage:"Storage",
    changed:"Switches",off:"Off",offHint:"Protection and display only.",shadow:"Shadow",shadowHint:"Observe and suggest, do not switch.",
-   active:"Active",activeHint:"Automation armed, limits stay active.",layers:"Safety layers",store:"Modules",
+   active:"Active",activeHint:"Automation armed, limits stay active.",layers:"Safety layers",store:"Devices",
    settings:"Settings",sources:"Sources",log:"Log",why:"Why this state?",normal:"Normal",boost:"Surplus",
    mandatory:"mandatory",saved:"Saved",loading:"SolarFlow loading …",ok:"ok",warn:"warn",blocked:"blocked",activeLayer:"active",
-   grpBase:"Basics",grpWw:"Hot water",grpWallbox:"Wallbox",grpHeating:"Heating",grpForecast:"Forecast",grpSafety:"Safety",
+   grpBase:"Basics",grpForecast:"Forecast",grpSafety:"Safety",
    feedOn:"Boost on at (W)",feedOff:"Boost off at (W)",minRun:"Min runtime (min)",minPause:"Min pause (min)",
-   boostTemp:"Boost temperature (°C)",normalTemp:"Normal temperature (°C)",minTemp:"Minimum temperature (°C)",hygieneTemp:"Hygiene (°C)",wwHyst:"Demand hysteresis (K)",
-   wallboxOn:"Charging on at (W)",wallboxOff:"Charging off at (W)",wallboxMinA:"Minimum current (A)",heatingShift:"Pre-heat (°C)",forecastHorizon:"Horizon (h)",
-   maxAge:"Max sensor age (s)",maxGrid:"Max grid import (W)",verify:"Write verification",save:"Save",
+   forecastHorizon:"Horizon (h)",maxAge:"Max sensor age (s)",maxGrid:"Max grid import (W)",verify:"Write verification",save:"Save",
    detect:"Auto-detect",savedSrc:"Sources saved",connected:"Connected",disconnected:"Disconnected",
    noData:"No data – please check sources.",allOk:"All good.",confident:"confident",guess:"suggestion",pick:"– please choose –",
    setTo:"to",srcHint:"Choose entities from your Home Assistant. “Auto-detect” fills safe suggestions.",
-   modulesHint:"Display and safety modules are on. You enable switching add-ons deliberately.",logEmpty:"No events yet."}
+   logEmpty:"No events yet.",
+   storeHint:"Pick a device from your plant and map its entities. SolarFlow detects matching entities automatically.",
+   addDevice:"Add device",myDevices:"My devices",noDevices:"No devices yet. Pick a type from the store below.",
+   allCats:"All",cat_heat:"Heat",cat_electric:"Electric",cat_mobility:"Mobility",cat_storage:"Storage",cat_generic:"Other",
+   edit:"Edit",remove:"Remove",on:"on",offState:"off",enabled:"Active",disabled:"Paused",
+   rolePick:"– please choose –",name:"Name",discover:"✨ Auto-detect",save2:"Apply",cancel:"Cancel",
+   st_idle:"Idle",st_charging:"Charging",st_heating:"Heating",st_holding:"Holding",st_ready:"Ready",st_blocked:"Blocked",
+   removeQ:"Really remove this device?",req:"required"}
 };
 let LANG=localStorage.getItem("sf_lang")||((navigator.language||"de").slice(0,2)==="en"?"en":"de");
-let SNAP=null, TAB="home", DRAFT=null, CATALOG=null;
+let SNAP=null, TAB="home", DRAFT=null, CATALOG=null, STORE_CAT="all", EDIT=null;
 const $=s=>document.querySelector(s);
 const t=k=>(T[LANG]||T.de)[k]||k;
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -171,6 +217,7 @@ async function api(path,opts){
 async function refresh(){const s=await api("/api/snapshot"); if(s){SNAP=s; if(!DRAFT)DRAFT=Object.assign({},s.settings); render();}}
 
 function statusLabel(st){return st==="blocked"?t("blocked"):st==="warn"?t("warn"):st==="active"?t("activeLayer"):t("ok");}
+function devStateLabel(st){return t("st_"+st)||st;}
 
 function render(){
   if(!SNAP){$("#app").innerHTML=`<div class="loading">${t("loading")}</div>`;return;}
@@ -186,7 +233,8 @@ function render(){
     ${hero(s)}
     <nav class="tabs">${[["home",t("layers")],["store",t("store")],["settings",t("settings")],["sources",t("sources")],["log",t("log")]]
       .map(([id,l])=>`<button class="tab ${TAB===id?"sel":""}" data-tab="${id}">${l}</button>`).join("")}</nav>
-    <div class="panel">${TAB==="home"?home(s):TAB==="store"?store(s):TAB==="settings"?settings(s):TAB==="sources"?sources(s):log(s)}</div>`;
+    <div class="panel">${TAB==="home"?home(s):TAB==="store"?store(s):TAB==="settings"?settings(s):TAB==="sources"?sources(s):log(s)}</div>
+    ${EDIT?editModal(s):""}`;
   wire();
 }
 function hero(s){
@@ -201,26 +249,52 @@ function hero(s){
     <div class="hinfo">
       <div class="chip ${s.state}">${s.state==="boost"?t("boost"):t("normal")}</div>
       <div class="row"><span>${t("storage")}</span><b>${s.storage_temp!=null?s.storage_temp+" °C":"–"}</b></div>
-      <div class="row"><span>${t("changed")}</span><b>${s.machine_changes}</b></div>
+      <div class="row"><span>${t("store")}</span><b>${(s.devices||[]).length}</b></div>
       <div class="why">${s.blocked?"🛡 ":"✅ "}${esc(s.reason_de||"")}</div>
       <div class="modes">${modes}</div>
     </div></section>`;
 }
 function home(s){
+  const devs=(s.assessments||[]).map(a=>devCard(a)).join("")||`<div class="empty">${t("noDevices")}</div>`;
   const layers=(s.layers||[]).map(l=>`<div class="layer ${l.status}"><div class="idx">${l.idx}</div>
     <div class="lname">${esc(LANG==="de"?l.name_de:l.name_en)}</div><div class="lstat">${statusLabel(l.status)}</div>
     <div class="ldet">${esc(LANG==="de"?l.detail_de:l.detail_en)}</div></div>`).join("");
   const steps=(s.steps||[]).map(st=>`<li class="s-${st.status}">${esc(st.text)}</li>`).join("")||`<li>${t("allOk")}</li>`;
-  return `<h2>${t("layers")}</h2><div class="grid">${layers}</div><h2>${t("why")}</h2><ol class="steps">${steps}</ol>`;
+  return `<h2>${t("myDevices")}</h2><div class="devices">${devs}</div>
+    <h2>${t("layers")}</h2><div class="grid">${layers}</div>
+    <h2>${t("why")}</h2><ol class="steps">${steps}</ol>`;
+}
+function devCard(a){
+  const det=Object.entries(a.details||{}).map(([k,v])=>`<span class="pill">${esc(k)}: ${esc(v)}</span>`).join("");
+  return `<div class="dev st-${a.state} ${a.enabled?"":"off"}">
+    <div class="dev-head"><div class="dev-ico">${esc(a.icon&&a.icon.startsWith("mdi:")?"🔌":"⚙️")}</div>
+      <div style="flex:1"><div class="dev-name">${esc(a.name)}</div><div class="dev-type">${esc(a.type_id)}</div></div>
+      <span class="dev-state">${a.active?"🟢":"⚪"} ${devStateLabel(a.state)}</span></div>
+    <div class="dev-reason">${esc(LANG==="de"?a.reason_de:a.reason_en)}</div>
+    <div class="dev-det">${det}</div></div>`;
 }
 function store(s){
-  const cats={base:"🧩",devices:"🔧",energy:"⚡",intelligence:"🧠",safety:"🛡️"};
-  const cards=(s.modules||[]).map(m=>`<div class="card ${m.enabled?"on":""}"><div class="cico">${cats[m.category]||"📦"}</div>
-    <div class="cbody"><div class="ctitle">${esc(LANG==="de"?m.name_de:m.name_en)}${!m.optional?`<span class="badge">${t("mandatory")}</span>`:""}</div>
-    <div class="csum">${esc(LANG==="de"?m.summary_de:m.summary_en)}</div>
-    <div class="creason">${esc(LANG==="de"?m.reason_de:m.reason_en)}</div></div>
-    <label class="sw"><input type="checkbox" data-module="${m.module_id}" ${m.enabled?"checked":""} ${!m.optional?"disabled":""}/><span></span></label></div>`).join("");
-  return `<h2>${t("store")}</h2><p class="hint">${t("modulesHint")}</p><div class="grid">${cards}</div>`;
+  const mine=(s.devices||[]).map(d=>{
+    const a=(s.assessments||[]).find(x=>x.device_id===d.id);
+    const roles=Object.entries(d.roles||{}).map(([k,v])=>`<div class="src"><span>${esc(k)}</span><code>${esc(v)}</code></div>`).join("")||`<div class="src"><span>–</span><code>–</code></div>`;
+    return `<div class="dev ${a&&a.active?"st-heating":""} ${d.enabled?"":"off"}">
+      <div class="dev-head"><div class="dev-ico">🔧</div>
+        <div style="flex:1"><div class="dev-name">${esc(d.name)}</div><div class="dev-type">${esc(LANG==="de"?d.name_de:d.name_en)}</div></div>
+        <label class="sw"><input type="checkbox" data-deven="${d.id}" ${d.enabled?"checked":""}/><span></span></label></div>
+      <div style="margin:6px 0">${roles}</div>
+      <div class="dev-acts"><button class="ghost" data-devedit="${d.id}">✏️ ${t("edit")}</button>
+        <button class="ghost" data-devdel="${d.id}">🗑 ${t("remove")}</button></div></div>`;
+  }).join("")||`<div class="empty">${t("noDevices")}</div>`;
+
+  const cats=["all","heat","electric","mobility","storage","generic"];
+  const catBar=cats.map(c=>`<button class="${STORE_CAT===c?"sel":""}" data-cat="${c}">${t("cat_"+c)}</button>`).join("");
+  const tiles=(s.device_types||[]).filter(x=>STORE_CAT==="all"||x.category===STORE_CAT).map(x=>`
+    <div class="card card-tile" data-addtype="${x.type_id}"><div class="cico">🧩</div>
+      <div class="cbody"><div class="ctitle">${esc(LANG==="de"?x.name_de:x.name_en)}</div>
+      <div class="csum">${esc(LANG==="de"?x.summary_de:x.summary_en)}</div></div></div>`).join("");
+  return `<h2>${t("myDevices")}</h2><div class="devices">${mine}</div>
+    <h2>${t("addDevice")}</h2><p class="hint">${t("storeHint")}</p>
+    <div class="store-cats">${catBar}</div><div class="grid">${tiles}</div>`;
 }
 function settings(s){
   const d=DRAFT||s.settings;
@@ -232,9 +306,6 @@ function settings(s){
   const grp=(title,body)=>`<section class="sgroup"><h3>${title}</h3>${body}</section>`;
   return `<h2>${t("settings")}</h2>
     ${grp(t("grpBase"),row("feed_in_on_w",t("feedOn"),0,20000,50)+row("feed_in_off_w",t("feedOff"),0,20000,50)+row("min_runtime_min",t("minRun"),0,720,1)+row("min_pause_min",t("minPause"),0,720,1))}
-    ${grp(t("grpWw"),row("ww_boost_temp",t("boostTemp"),10,60,1)+row("ww_normal_temp",t("normalTemp"),10,60,1)+row("ww_min_temp",t("minTemp"),10,60,1)+row("ww_hygiene_min_temp",t("hygieneTemp"),10,60,1)+row("ww_hysteresis_c",t("wwHyst"),0,15,0.5))}
-    ${grp(t("grpWallbox"),row("wallbox_on_w",t("wallboxOn"),0,20000,100)+row("wallbox_off_w",t("wallboxOff"),0,20000,100)+row("wallbox_min_charge_a",t("wallboxMinA"),6,32,1))}
-    ${grp(t("grpHeating"),row("heating_shift_c",t("heatingShift"),0,10,0.5))}
     ${grp(t("grpForecast"),row("forecast_horizon_h",t("forecastHorizon"),1,72,1))}
     ${grp(t("grpSafety"),row("sensor_max_age_s",t("maxAge"),10,3600,10)+row("max_grid_import_w",t("maxGrid"),1000,60000,100)+chk("verify_writes",t("verify")))}
     <button class="primary" data-save>${t("save")}</button>`;
@@ -260,17 +331,64 @@ function log(s){
   const rows=(s.audit||[]).map(e=>`<div class="le ${e.level}"><time>${esc(e.t)}</time><span>${esc(e.text)}</span></div>`).join("")||`<div class="le"><time></time><span>${t("logEmpty")}</span></div>`;
   return `<h2>${t("log")}</h2><div class="log">${rows}</div>`;
 }
+
+// ---------------------------------------------------------------- Modal
+function editModal(s){
+  const spec=(s.device_types||[]).find(x=>x.type_id===EDIT.type_id)||{roles:[],settings:[],name_de:EDIT.type_id};
+  const nameVal=EDIT.name||(LANG==="de"?spec.name_de:spec.name_en);
+  const roleRows=(spec.roles||[]).map(r=>{
+    const cur=(EDIT.roles||{})[r.key]||"";
+    const opts=(CATALOG||[]).filter(e=>(r.domains||[]).length===0||(r.domains||[]).includes(e.domain));
+    return `<div class="role-row"><label>${esc(LANG==="de"?r.label_de:r.label_en)}${r.required?` <span class="req">(${t("req")})</span>`:""}</label>
+      <select data-role="${r.key}"><option value="">${t("rolePick")}</option>
+        ${opts.map(e=>`<option value="${e.entity_id}" ${e.entity_id===cur?"selected":""}>${esc(e.entity_id)} — ${esc(e.name)}</option>`).join("")}
+      </select></div>`;
+  }).join("");
+  const setRows=(spec.settings||[]).map(x=>{
+    const val=(EDIT.settings&&EDIT.settings[x.key]!=null)?EDIT.settings[x.key]:x.default;
+    return `<div class="srow"><label>${esc(LANG==="de"?x.label_de:x.label_en)}</label>
+      <input type="range" data-dset="${x.key}" min="${x.min}" max="${x.max}" step="${x.step}" value="${val}"/>
+      <output data-dout="${x.key}">${val}${x.unit?" "+x.unit:""}</output></div>`;
+  }).join("");
+  return `<div class="modal" data-modal><div class="box">
+    <div class="mh"><div class="dev-ico">🧩</div><div><h3>${esc(LANG==="de"?spec.name_de:spec.name_en)}</h3>
+      <div class="dev-type">${esc(LANG==="de"?spec.summary_de:spec.summary_en)}</div></div></div>
+    <div class="srow"><label>${t("name")}</label><input type="text" data-dname value="${esc(nameVal)}"/></div>
+    <button class="ghost" data-ddiscover>${t("discover")}</button>
+    <div style="margin-top:10px">${roleRows}</div>
+    ${setRows?`<h2>${t("settings")}</h2>${setRows}`:""}
+    <div class="modal-foot"><button class="ghost" data-dcancel>${t("cancel")}</button>
+      <button class="primary" style="margin:0" data-dsave>${t("save2")}</button></div>
+  </div></div>`;
+}
+
 function wire(){
   document.querySelectorAll("[data-mode]").forEach(el=>el.onclick=async()=>{const r=await api("/api/mode",{method:"POST",body:JSON.stringify({mode:el.dataset.mode})});if(r){SNAP=r;render();}});
   document.querySelectorAll("[data-emg]").forEach(el=>el.onclick=async()=>{const r=await api("/api/emergency",{method:"POST",body:JSON.stringify({on:el.dataset.emg==="1"})});if(r){SNAP=r;render();}});
-  document.querySelectorAll("[data-tab]").forEach(el=>el.onclick=()=>{TAB=el.dataset.tab;if(TAB==="sources"&&!CATALOG)loadCatalog();render();});
+  document.querySelectorAll("[data-tab]").forEach(el=>el.onclick=()=>{TAB=el.dataset.tab;if((TAB==="sources"||TAB==="store")&&!CATALOG)loadCatalog();render();});
   const lang=document.querySelector("[data-lang]");if(lang)lang.onclick=()=>{LANG=LANG==="de"?"en":"de";localStorage.setItem("sf_lang",LANG);render();};
   const save=document.querySelector("[data-save]");if(save)save.onclick=saveSettings;
   document.querySelectorAll("input[data-range]").forEach(el=>el.oninput=()=>{DRAFT=Object.assign({},DRAFT,{[el.dataset.range]:Number(el.value)});const o=document.querySelector(`output[data-out="${el.dataset.range}"]`);if(o)o.textContent=el.value;});
   document.querySelectorAll("input[data-check]").forEach(el=>el.onchange=()=>{DRAFT=Object.assign({},DRAFT,{[el.dataset.check]:el.checked});const o=document.querySelector(`output[data-out="${el.dataset.check}"]`);if(o)o.textContent=el.checked?"✓":"–";});
-  document.querySelectorAll("input[data-module]").forEach(el=>el.onchange=async()=>{const r=await api("/api/module",{method:"POST",body:JSON.stringify({module_id:el.dataset.module,enabled:el.checked})});if(r){SNAP=r;render();}});
   const det=document.querySelector("[data-detect]");if(det)det.onclick=detectSources;
   const ssrc=document.querySelector("[data-savesrc]");if(ssrc)ssrc.onclick=saveSources;
+
+  // --- Store ---
+  document.querySelectorAll("[data-cat]").forEach(el=>el.onclick=()=>{STORE_CAT=el.dataset.cat;render();});
+  document.querySelectorAll("[data-addtype]").forEach(el=>el.onclick=()=>openAdd(el.dataset.addtype));
+  document.querySelectorAll("[data-devedit]").forEach(el=>el.onclick=()=>openEdit(el.dataset.devedit));
+  document.querySelectorAll("[data-devdel]").forEach(el=>el.onclick=()=>removeDevice(el.dataset.devdel));
+  document.querySelectorAll("input[data-deven]").forEach(el=>el.onchange=async()=>{
+    const r=await api("/api/device/update",{method:"POST",body:JSON.stringify({id:el.dataset.deven,enabled:el.checked})});if(r){SNAP=r;render();}});
+
+  // --- Modal ---
+  const cancel=document.querySelector("[data-dcancel]");if(cancel)cancel.onclick=()=>{EDIT=null;render();};
+  const m=document.querySelector("[data-modal]");if(m)m.onclick=e=>{if(e.target===m){EDIT=null;render();}};
+  const dsc=document.querySelector("[data-ddiscover]");if(dsc)dsc.onclick=discoverRoles;
+  const dsv=document.querySelector("[data-dsave]");if(dsv)dsv.onclick=saveDevice;
+  document.querySelectorAll("input[data-dset]").forEach(el=>el.oninput=()=>{
+    EDIT.settings=Object.assign({},EDIT.settings,{[el.dataset.dset]:Number(el.value)});
+    const o=document.querySelector(`output[data-dout="${el.dataset.dset}"]`);if(o)o.textContent=el.value;});
 }
 async function saveSettings(){const r=await api("/api/settings",{method:"POST",body:JSON.stringify({settings:DRAFT})});
   if(r){SNAP=r.snapshot;DRAFT=Object.assign({},r.snapshot.settings);render();toast(t("saved"));}}
@@ -285,6 +403,40 @@ async function saveSources(){
   const map={};document.querySelectorAll("[data-src]").forEach(el=>{map[el.dataset.src]=el.value;});
   const r=await api("/api/sources",{method:"POST",body:JSON.stringify({sources:map})});
   if(r){SNAP=r;toast(t("savedSrc"));render();}
+}
+async function openAdd(typeId){
+  if(!CATALOG)await loadCatalog();
+  const spec=(SNAP.device_types||[]).find(x=>x.type_id===typeId)||{};
+  EDIT={mode:"add",type_id:typeId,name:LANG==="de"?spec.name_de:spec.name_en,roles:{},settings:{}};
+  render();
+}
+function openEdit(id){
+  const d=(SNAP.devices||[]).find(x=>x.id===id);if(!d)return;
+  EDIT={mode:"edit",id:d.id,type_id:d.type_id,name:d.name,roles:Object.assign({},d.roles),settings:Object.assign({},d.settings)};
+  if(!CATALOG)loadCatalog();
+  render();
+}
+async function discoverRoles(){
+  const roles={};document.querySelectorAll("[data-role]").forEach(el=>{if(el.value)roles[el.dataset.role]=el.value;});
+  const name=document.querySelector("[data-dname]")?.value||"";
+  const r=await api("/api/device/discover",{method:"POST",body:JSON.stringify({type_id:EDIT.type_id,name})});
+  if(r&&r.roles){Object.entries(r.roles).forEach(([k,v])=>{if(v)roles[k]=v;});EDIT.roles=roles;render();toast(t("detect"));}
+}
+async function saveDevice(){
+  const name=document.querySelector("[data-dname]")?.value||"";
+  const roles={};document.querySelectorAll("[data-role]").forEach(el=>{if(el.value)roles[el.dataset.role]=el.value;});
+  let r;
+  if(EDIT.mode==="add"){
+    r=await api("/api/devices",{method:"POST",body:JSON.stringify({type_id:EDIT.type_id,name,roles})});
+  }else{
+    r=await api("/api/device/update",{method:"POST",body:JSON.stringify({id:EDIT.id,name,roles,settings:EDIT.settings||{}})});
+  }
+  if(r){SNAP=r;EDIT=null;toast(t("saved"));render();}
+}
+async function removeDevice(id){
+  if(!confirm(t("removeQ")))return;
+  const r=await api("/api/device/remove",{method:"POST",body:JSON.stringify({id})});
+  if(r){SNAP=r;toast(t("remove"));render();}
 }
 refresh();
 setInterval(refresh,3000);

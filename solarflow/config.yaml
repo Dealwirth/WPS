@@ -1,7 +1,7 @@
 name: "SolarFlow"
-version: "1.0.2"
+version: "2.0.0"
 slug: "solarflow"
-description: "Sichere PV-Ueberschuss-Automatik fuer Waermepumpe, Warmwasser und Laden"
+description: "Sichere PV-Ueberschuss-Automatik mit Geräte-Store fuer Waermepumpe, Wallbox, Speicher und mehr"
 url: "https://github.com/Dealwirth/WPS"
 arch:
   - aarch64

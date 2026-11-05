@@ -7,8 +7,8 @@ Pfad, der später Geräte schaltet, wird hier abgesichert.
 
 from __future__ import annotations
 
+from . import devices
 from .limits import clamp, validate_setpoint, validate_settings
-from .machine import Machine
 from .models import (
     Action,
     Decision,
@@ -25,7 +25,6 @@ __all__ = [
     "Action",
     "Decision",
     "LayerStatus",
-    "Machine",
     "Mode",
     "PlantState",
     "Reading",
@@ -34,6 +33,7 @@ __all__ = [
     "check_freshness",
     "check_value",
     "clamp",
+    "devices",
     "evaluate_layers",
     "gate",
     "reading_ok",
