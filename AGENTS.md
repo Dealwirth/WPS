@@ -61,6 +61,24 @@ Alle Schwellen sind benutzerdefiniert einstellbar – im Panel (Tab
 Panel/`const.py`/`config_flow.py`/`services.py`. Danach `tests/core/` laufen
 lassen.
 
+## Reale Installation (Stand 2026-11)
+
+- Läuft auf dem echten HA (`https://petryss.duckdns.org:8123`, HA 2026.10.4)
+  via HACS-Custom-Repository `Dealwirth/WPS`, Release `v0.2.0`.
+- Config-Entry `SolarFlow` mit diesen echten Entitäten:
+  - Einspeisung `sensor.solarnet_leistung_netzeinspeisung`
+  - PV `sensor.solarnet_pv_leistung`
+  - Netzbezug `sensor.solarnet_leistung_netzbezug`
+  - WW `water_heater.e3_vitocal_16_warmwasser`,
+    Sollwert `number.e3_vitocal_16_ww_temperatur`,
+    Speicher `sensor.e3_vitocal_16_ww_speichertemperatur`,
+    Hysterese `number.e3_vitocal_16_ww_hystereseschalter_ein`
+  - Heizung `climate.e3_vitocal_16_heizung`
+  - Wallbox `switch.gerage_wattpilot_pv_surplus`
+- **Startet im Schatten-Modus.** `switch.solarflow_automatik` bleibt aus, bis
+  der Nutzer bewusst auf Aktiv schaltet. Alte Automationen bleiben unangetastet,
+  bis die neue Funktion nachweislich läuft (harte Nutzeranforderung).
+
 ## Bekannte Fallstricke
 
 - **Blockierende Dateizugriffe im Event-Loop vermeiden.** Das Lesen von
