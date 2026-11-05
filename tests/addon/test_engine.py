@@ -8,6 +8,7 @@ aufzeichnet – so laesst sich genau pruefen, *ob* und *was* geschaltet wird.
 from __future__ import annotations
 
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -23,7 +24,14 @@ def _state(value, unit=None, **attrs):
     a = dict(attrs)
     if unit:
         a["unit_of_measurement"] = unit
-    return {"entity_id": "", "state": str(value), "attributes": a, "last_updated": "2026-11-05T12:00:00+00:00"}
+    # Zeitstempel relativ zur Jetzt-Zeit, sonst gilt der Wert je nach
+    # Testlauf irgendwann als veraltet und der Zyklus sperrt zu Recht.
+    return {
+        "entity_id": "",
+        "state": str(value),
+        "attributes": a,
+        "last_updated": datetime.now(UTC).isoformat(),
+    }
 
 
 class FakeClient:
