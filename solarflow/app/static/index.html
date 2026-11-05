@@ -290,7 +290,7 @@ function store(s){
   }).join("")||`<div class="empty">${t("noDevices")}</div>`;
 
   const cats=["all","heat","electric","mobility","storage","generic"];
-  const catBar=cats.map(c=>`<button class="${STORE_CAT===c?"sel":""}" data-cat="${c}">${t("cat_"+c)}</button>`).join("");
+  const catBar=cats.map(c=>`<button class="${STORE_CAT===c?"sel":""}" data-cat="${c}">${t(c==="all"?"allCats":"cat_"+c)}</button>`).join("");
   const tiles=(s.device_types||[]).filter(x=>STORE_CAT==="all"||x.category===STORE_CAT).map(x=>`
     <div class="card card-tile" data-addtype="${x.type_id}"><div class="cico">🧩</div>
       <div class="cbody"><div class="ctitle">${esc(LANG==="de"?x.name_de:x.name_en)}</div>

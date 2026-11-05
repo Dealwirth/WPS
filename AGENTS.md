@@ -174,6 +174,10 @@ sudo docker run -d --name solarflow-test --network host \
 
 ## Offene Punkte
 
+- [ ] **IP-Bann der HA-Instanz aufheben**: Nach zu vielen WS-/Session-
+      Versuchen hat HA die Egress-IP der Arbeitsumgebung gesperrt (jede
+      Anfrage an `:8123` liefert `403`). Aufheben am Server:
+      `/homeassistant/ip_bans.yaml` leeren bzw. HA neu starten.
 - [ ] Nutzer-Freigabe einholen, dann Alt-Automationen zuerst deaktivieren,
       später löschen (erst wenn SolarFlow aktiv läuft).
 - [ ] SolarFlow-App auf der realen Instanz einrichten (Schatten-Modus) und
@@ -183,6 +187,12 @@ sudo docker run -d --name solarflow-test --network host \
       löschen.
 
 ## Betrieb der realen Instanz (wichtige Handgriffe)
+
+- **IP-Bann vermeiden**: Nicht wiederholt fehlschlagende WS-Auth-Versuche
+  (abgelaufenes Token) senden. Jede 403 liefert kein `auth_required`-JSON,
+  sondern schließt den WS sofort. Vor jedem Lauf Token prüfen und maximal
+  **einen** Versuch je Verbindung; danach neu verbinden. Ein Bann gilt
+  5 Minuten ab dem letzten Fehlversuch – weitere Fehlversuche verlängern ihn.
 
 - **Ingress-Sitzung erzeugen** (sonst liefert jede Ingress-URL `401`):
   per WebSocket `supervisor/api` mit `POST /ingress/session` ein
