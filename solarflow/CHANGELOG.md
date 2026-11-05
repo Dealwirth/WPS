@@ -1,3 +1,20 @@
+## 2.1.0
+
+- **Jedes Gerät hat sein eigenes Bild** (Emoji) – in Vorlagen festgelegt und je
+  Gerät frei wählbar. Gerätekarten und Store-Kacheln zeigen das Bild.
+- **Automatische Geräteerkennung**: „Geräte suchen“ prüft die echten
+  HA-Geräte und schlägt passende Typen samt Entitäten vor – mit
+  Sicherheits-Prozent. „Alle übernehmen“ legt sie in einem Schritt an.
+- **Neuer Reiter „Energiefluss“**: stellt PV-Erzeugung, Einspeisung,
+  Netzbezug, Gerätesumme und je Gerät die Leistung mit Anteil und
+  Eigenverbrauchsquote gegenüber.
+- **Schönere, ruhigere Oberfläche**: sanfte Hintergrund-Animationen, weiche
+  Übergänge, farbige Akzente je Gerät, klare Karten. Weniger Text, mehr Bild.
+- **Bedienung entspannter**: klare Sprache, Kurzinfos, Direktlinks
+  (`?tab=…&lang=…`), Geräte lassen sich per Klick auf einen Fund übernehmen.
+- Neu: `/api/devices/auto` (GET Vorschläge, POST anlegen) und Vergleichsdaten
+  im Status (`compare`). Alle Kernfunktionen weiter ohne Home Assistant testbar.
+
 ## 2.0.1
 
 - **Echte HA-Geräte im Store**: der Store liest das Home-Assistant-Geräte-,

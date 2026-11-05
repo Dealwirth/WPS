@@ -51,7 +51,19 @@ class FakeClient:
         return None
 
     async def fetch_registry(self):
-        return {"devices": [], "entities": [], "areas": []}
+        return {
+            "devices": [{"id": "d1", "name": "Wallbox Garage", "manufacturer": "ACME", "model": "WB1"}],
+            "entities": [
+                {"entity_id": "switch.wb", "device_id": "d1", "name": "Wallbox laden"},
+                {
+                    "entity_id": "sensor.wb_power",
+                    "device_id": "d1",
+                    "name": "Wallbox Leistung",
+                    "original_name": "Leistung",
+                },
+            ],
+            "areas": [],
+        }
 
     async def call_service(self, *args, **kwargs):
         return None
@@ -97,3 +109,48 @@ async def test_entities_endpoint(client):
     resp = await client.get("/api/entities")
     assert resp.status == 200
     assert isinstance(await resp.json(), list)
+
+
+async def test_device_types_have_emoji(client):
+    resp = await client.get("/api/device_types")
+    types = await resp.json()
+    assert all(t.get("emoji") for t in types)
+    assert all(t.get("accent") for t in types)
+
+
+async def test_auto_detect_endpoint(client):
+    resp = await client.get("/api/devices/auto")
+    assert resp.status == 200
+    found = await resp.json()
+    assert isinstance(found, list)
+    # FakeClient liefert ein Wallbox-Gerät mit passendem Schalter + Leistung.
+    assert any(f["type_id"] == "wallbox" for f in found)
+
+
+async def test_auto_add_endpoint(client):
+    resp = await client.post("/api/devices/auto", json={})
+    assert resp.status == 200
+    data = await resp.json()
+    assert data["added"] >= 1
+    assert any(d["type_id"] == "wallbox" for d in data["snapshot"]["devices"])
+
+
+async def test_add_device_with_emoji(client):
+    resp = await client.post(
+        "/api/devices",
+        json={"type_id": "battery", "name": "Speicher", "roles": {"soc": "sensor.demo_soc"}, "emoji": "🔋"},
+    )
+    assert resp.status == 200
+    snap = await resp.json()
+    dev = next(d for d in snap["devices"] if d["name"] == "Speicher")
+    assert dev["emoji"] == "🔋"
+    assessment = next(a for a in snap["assessments"] if a["device_id"] == dev["id"])
+    assert assessment["emoji"] == "🔋"
+
+
+async def test_snapshot_has_compare(client):
+    resp = await client.get("/api/snapshot")
+    data = await resp.json()
+    cmp = data.get("compare")
+    assert isinstance(cmp, dict)
+    assert {"pv_w", "feed_in_w", "grid_import_w", "devices_w", "self_use", "devices"} <= set(cmp)

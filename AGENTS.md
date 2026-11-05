@@ -231,3 +231,29 @@ sudo docker run -d --name solarflow-test --network host \
   `POST /api/device/update`, `POST /api/device/remove`,
   `POST /api/device/discover`.
 
+## Oberfläche & Erkennung (ab 2.1.0)
+
+- **Bild je Gerät**: Jede Vorlage hat `emoji` (Anzeigebild) und `accent`
+  (Akzentfarbe) in `catalog.py`. Ein Gerät kann sein Bild überschreiben
+  (`Device.emoji`, leer = Vorlagenbild). Anzeige über `device_emoji` /
+  `device_view`; `DeviceAssessment.emoji` / `.accent` reichen es in die
+  Oberfläche durch (`assess()` setzt beide zentral).
+- **Automatische Geräteerkennung**: `discover.detect_device_types(specs,
+  entities, name_hint=…)` ist eine reine Funktion. Sie verlangt **alle**
+  Pflichtrollen einer Vorlage; ohne Pflichtrolle mindestens zwei belegte
+  Rollen. `_MIN_CONFIDENCE = 0.55`. Genutzt von
+  `engine.auto_detect_devices()` (Vorschläge je HA-Gerät, überspringt bereits
+  belegte Entitäten) und `engine.auto_add_devices()`.
+- **Neue Endpunkte**: `GET /api/devices/auto` (Vorschläge),
+  `POST /api/devices/auto` (alle anlegen, Antwort `{added, snapshot}`).
+- **Vergleichsdaten**: `engine.compare()` liefert `pv_w`, `feed_in_w`,
+  `grid_import_w`, `devices_w`, `self_use` und je Gerät Leistung/Anteil;
+  liegt im Snapshot unter `compare`. Reiter „Energiefluss“ zeigt das an.
+- **UI-Datei**: `solarflow/app/static/index.html` (eine Datei, kein Build).
+  Reiter: Schutz-Ebenen, Energiefluss, Geräte, Einstellungen, Quellen,
+  Protokoll. Deep-Links `?tab=…&lang=…&cat=…`. Alle API-Aufrufe relativ zum
+  Pfad (Ingress-fähig).
+- **Tests**: `tests/core/test_devices.py` (Katalog, Emoji, Erkennung),
+  `tests/addon/test_server.py` (Endpunkte inkl. Auto-Erkennung/Emoji).
+  FakeClient liefert dafür ein Wallbox-Gerät im Register.
+

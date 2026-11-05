@@ -64,3 +64,77 @@ def suggest_roles(spec: DeviceTypeSpec, entities: list[EntityInfo], *, hint: str
         else:
             out.append(RoleSuggestion(role.key, None, 0.0, []))
     return out
+
+
+@dataclass(slots=True)
+class DetectedDevice:
+    """Ein automatisch erkanntes Gerät (noch nicht angelegt)."""
+
+    type_id: str
+    name: str
+    confidence: float
+    roles: dict[str, str]
+    matched: tuple[str, ...]  # welche Pflichtrollen belegt sind
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "type_id": self.type_id,
+            "name": self.name,
+            "confidence": round(self.confidence, 2),
+            "roles": dict(self.roles),
+            "matched": list(self.matched),
+        }
+
+
+#: Ab so vielen belegten Pflichtrollen gilt ein Typ als sicher erkannt.
+_MIN_CONFIDENCE = 0.55
+
+
+def detect_device_types(
+    specs: tuple[DeviceTypeSpec, ...],
+    entities: list[EntityInfo],
+    *,
+    name_hint: str = "",
+) -> list[DetectedDevice]:
+    """Prüft, welche Vorlagen zu einer Entitätsmenge passen.
+
+    Für jede Vorlage werden die Rollen vorgeschlagen. Ein Vorschlag zählt nur,
+    wenn **alle** Pflichtrollen belegt sind (sonst wäre das Gerät nicht
+    schaltbar). Ergebnis ist nach Sicherheit sortiert – der beste Treffer
+    zuerst. Reine Funktion, ohne Home Assistant testbar.
+    """
+    results: list[DetectedDevice] = []
+    for spec in specs:
+        suggestions = {s.key: s for s in suggest_roles(spec, entities, hint=name_hint)}
+        roles: dict[str, str] = {}
+        for key, sug in suggestions.items():
+            if sug.entity_id:
+                roles[key] = sug.entity_id
+        required = spec.required_roles
+        if required and not all(key in roles for key in required):
+            continue
+        # Ohne Pflichtrolle wären Einzeltreffer zu unscharf (z. B. jede
+        # Temperatur-Zahl passt sonst zur Wärmepumpe). Daher mindestens zwei
+        # belegte Rollen verlangen.
+        if not required and len(roles) < 2:
+            continue
+        if not roles:
+            continue
+        # Sicherheit: Mittel der Rollen-Treffer, Pflichtrollen zählen doppelt.
+        scores = [s.confidence for s in suggestions.values() if s.entity_id]
+        req_scores = [suggestions[k].confidence for k in required if k in suggestions]
+        pool = scores + req_scores
+        confidence = sum(pool) / len(pool) if pool else 0.0
+        if confidence < _MIN_CONFIDENCE:
+            continue
+        results.append(
+            DetectedDevice(
+                type_id=spec.type_id,
+                name=name_hint or spec.name_de,
+                confidence=confidence,
+                roles=roles,
+                matched=tuple(k for k in required if k in roles),
+            )
+        )
+    results.sort(key=lambda d: -d.confidence)
+    return results

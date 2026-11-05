@@ -89,6 +89,8 @@ class DeviceTypeSpec:
     roles: tuple[RoleSpec, ...]
     settings: tuple[SettingSpec, ...] = ()
     safety_level: str = "standard"
+    emoji: str = "🧩"
+    accent: str = "violet"
 
     def role(self, key: str) -> RoleSpec | None:
         return next((r for r in self.roles if r.key == key), None)
@@ -108,6 +110,8 @@ class DeviceTypeSpec:
             "summary_de": self.summary_de,
             "summary_en": self.summary_en,
             "icon": self.icon,
+            "emoji": self.emoji,
+            "accent": self.accent,
             "category": self.category.value,
             "strategy": self.strategy,
             "safety_level": self.safety_level,

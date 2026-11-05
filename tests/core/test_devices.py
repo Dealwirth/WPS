@@ -16,6 +16,8 @@ from core.devices import (
     DeviceEntity,
     assess,
     clamp_device_settings,
+    detect_device_types,
+    device_view,
     group_by_device,
     make_device,
     missing_required_roles,
@@ -72,6 +74,61 @@ class TestCatalog(unittest.TestCase):
 
     def test_make_device_unknown_type(self):
         self.assertIsNone(make_device("does_not_exist"))
+
+    def test_every_type_has_emoji_and_accent(self):
+        for t in DEVICE_TYPES:
+            self.assertTrue(t.emoji, t.type_id)
+            self.assertNotEqual(t.emoji, "🧩", t.type_id)
+            self.assertTrue(t.accent, t.type_id)
+
+    def test_emoji_in_card(self):
+        cards = {c["type_id"]: c for c in type_cards()}
+        self.assertEqual(cards["wallbox"]["emoji"], "🚗")
+        self.assertEqual(cards["heat_pump"]["accent"], "amber")
+
+    def test_device_emoji_override(self):
+        d = make_device("wallbox", emoji="🏎️")
+        self.assertEqual(device_view(d)["emoji"], "🏎️")
+        d2 = make_device("wallbox")
+        self.assertEqual(device_view(d2)["emoji"], "🚗")
+
+
+class TestAutoDetect(unittest.TestCase):
+    def test_detects_wallbox(self):
+        entities = [
+            EntityInfo("switch.wallbox_charge", "switch", "Wallbox laden"),
+            EntityInfo("sensor.wallbox_power", "sensor", "Wallbox Leistung", unit="W"),
+        ]
+        found = detect_device_types(DEVICE_TYPES, entities, name_hint="Wallbox")
+        ids = [d.type_id for d in found]
+        self.assertIn("wallbox", ids)
+
+    def test_requires_all_required_roles(self):
+        """Ohne Schalter darf keine schaltbare Vorlage entstehen."""
+        entities = [EntityInfo("sensor.x_power", "sensor", "Leistung", unit="W")]
+        found = detect_device_types(DEVICE_TYPES, entities)
+        self.assertNotIn("wallbox", [d.type_id for d in found])
+
+    def test_empty_entities(self):
+        self.assertEqual(detect_device_types(DEVICE_TYPES, []), [])
+
+    def test_detects_heat_pump(self):
+        entities = [
+            EntityInfo("sensor.vitocal_speicher", "sensor", "WW Speichertemperatur", unit="°C"),
+            EntityInfo("number.vitocal_ww_soll", "number", "WW Solltemperatur", unit="°C"),
+        ]
+        found = detect_device_types(DEVICE_TYPES, entities, name_hint="Vitocal")
+        self.assertIn("heat_pump", [d.type_id for d in found])
+
+    def test_sorted_by_confidence(self):
+        entities = [
+            EntityInfo("switch.wallbox", "switch", "Wallbox laden"),
+            EntityInfo("sensor.wallbox_power", "sensor", "Wallbox Leistung", unit="W"),
+            EntityInfo("sensor.wallbox_soc", "sensor", "Wallbox Ladestand", unit="%"),
+        ]
+        found = detect_device_types(DEVICE_TYPES, entities)
+        conf = [d.confidence for d in found]
+        self.assertEqual(conf, sorted(conf, reverse=True))
 
 
 class TestClamp(unittest.TestCase):

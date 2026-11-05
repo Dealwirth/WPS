@@ -87,6 +87,8 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     # ---------------------------------------------------------------- Wärme
     DeviceTypeSpec(
         type_id="heat_pump",
+        emoji="♨️",
+        accent="amber",
         name_de="Wärmepumpe / Warmwasser",
         name_en="Heat pump / Hot water",
         summary_de="Erwärmt Warmwasser bei PV-Überschuss – mit Hysterese statt Takten.",
@@ -99,6 +101,8 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     ),
     DeviceTypeSpec(
         type_id="heating_rod",
+        emoji="🔥",
+        accent="coral",
         name_de="Heizstab / Tauchsieder",
         name_en="Heating rod / Immersion heater",
         summary_de="Schaltet einen Heizstab nach Überschuss und Speichertemperatur.",
@@ -111,6 +115,8 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     ),
     DeviceTypeSpec(
         type_id="air_conditioner",
+        emoji="❄️",
+        accent="sky",
         name_de="Klimaanlage",
         name_en="Air conditioner",
         summary_de="Nutzt Überschuss zum Vorheizen/Vorkühlen – nur Vorschlag, kein Zwang.",
@@ -127,6 +133,8 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     # --------------------------------------------------------------- Strom
     DeviceTypeSpec(
         type_id="wallbox",
+        emoji="🚗",
+        accent="teal",
         name_de="Wallbox",
         name_en="Wallbox",
         summary_de="Lädt das Auto mit PV-Überschuss – Mindestlaufzeit und Ziel-Ladestand werden beachtet.",
@@ -139,6 +147,8 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     ),
     DeviceTypeSpec(
         type_id="ev_charger",
+        emoji="🔌",
+        accent="sky",
         name_de="E-Auto / Ladegerät",
         name_en="EV / Charger",
         summary_de="Einfaches Überschussladen für ein Ladegerät oder eine schaltbare Ladesteckdose.",
@@ -151,6 +161,8 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     ),
     DeviceTypeSpec(
         type_id="battery",
+        emoji="🔋",
+        accent="violet",
         name_de="PV-Speicher (Batterie)",
         name_en="PV battery",
         summary_de="Beobachtet den Speicher und schont die Reserve – schreibt nichts.",
@@ -166,6 +178,8 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     ),
     DeviceTypeSpec(
         type_id="pool_pump",
+        emoji="🏊",
+        accent="sky",
         name_de="Poolpumpe",
         name_en="Pool pump",
         summary_de="Lässt die Poolpumpe bevorzugt bei Sonne laufen.",
@@ -178,6 +192,8 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     ),
     DeviceTypeSpec(
         type_id="water_pump",
+        emoji="💧",
+        accent="sky",
         name_de="Pumpe / Bewässerung",
         name_en="Pump / Irrigation",
         summary_de="Bewässerung oder Pumpe laufen bei Überschuss.",
@@ -190,6 +206,8 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     ),
     DeviceTypeSpec(
         type_id="washing_machine",
+        emoji="🧺",
+        accent="violet",
         name_de="Waschmaschine",
         name_en="Washing machine",
         summary_de="Startet die Waschmaschine nur bei genügend Überschuss.",
@@ -202,6 +220,8 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     ),
     DeviceTypeSpec(
         type_id="dryer",
+        emoji="🌀",
+        accent="pink",
         name_de="Trockner",
         name_en="Dryer",
         summary_de="Trockner läuft bei Überschuss.",
@@ -214,6 +234,8 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     ),
     DeviceTypeSpec(
         type_id="dishwasher",
+        emoji="🍽️",
+        accent="teal",
         name_de="Geschirrspüler",
         name_en="Dishwasher",
         summary_de="Geschirrspüler startet bei Überschuss.",
@@ -226,6 +248,8 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     ),
     DeviceTypeSpec(
         type_id="generic_switch",
+        emoji="⚡",
+        accent="amber",
         name_de="Freier Verbraucher",
         name_en="Generic load",
         summary_de="Beliebiger schaltbarer Verbraucher – Steckdose, Relais, Gerät.",

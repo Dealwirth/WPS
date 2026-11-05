@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from core.devices import (
+    DEVICE_TYPES,
     TYPES_BY_ID,
     Device,
     DeviceContext,
@@ -28,6 +29,7 @@ from core.devices import (
     DeviceGroup,
     assess,
     clamp_device_settings,
+    detect_device_types,
     device_view,
     group_by_device,
     make_device,
@@ -274,8 +276,15 @@ class SolarFlowEngine:
     # ------------------------------------------------------------------ #
     # Geräte-Store
     # ------------------------------------------------------------------ #
-    def add_device(self, type_id: str, *, name: str = "", roles: dict[str, str] | None = None) -> Device | None:
-        dev = make_device(type_id, name=name, roles=roles)
+    def add_device(
+        self,
+        type_id: str,
+        *,
+        name: str = "",
+        roles: dict[str, str] | None = None,
+        emoji: str = "",
+    ) -> Device | None:
+        dev = make_device(type_id, name=name, roles=roles, emoji=emoji)
         if dev is None:
             return None
         self.devices.append(dev)
@@ -291,6 +300,8 @@ class SolarFlowEngine:
             dev.name = str(patch["name"])
         if "enabled" in patch:
             dev.enabled = bool(patch["enabled"])
+        if "emoji" in patch:
+            dev.emoji = str(patch["emoji"] or "")
         if isinstance(patch.get("roles"), dict):
             for k, v in patch["roles"].items():
                 if v:
@@ -419,6 +430,52 @@ class SolarFlowEngine:
     def device_types(self) -> list[dict[str, object]]:
         """Alle Geräte-Vorlagen für den Store."""
         return type_cards()
+
+    def auto_detect_devices(self, device_key: str = "") -> list[dict[str, object]]:
+        """Erkennt Geräte automatisch aus den HA-Gerätegruppen.
+
+        Ohne ``device_key`` werden **alle** bekannten HA-Geräte geprüft. Für
+        jedes Gerät entsteht höchstens ein Vorschlag – der Typ mit der besten
+        Sicherheit. Schon eingerichtete Entitäten werden übersprungen, damit
+        nichts doppelt angelegt wird.
+        """
+        used = {e for d in self.devices for e in d.roles.values() if e}
+        groups = self._groups
+        if device_key:
+            groups = [g for g in groups if g.key == device_key]
+        out: list[dict[str, object]] = []
+        for g in groups:
+            if g.key == "__none__" and not device_key:
+                continue
+            infos = [self._entity_info(e) for e in g.entities]
+            infos = [i for i in infos if i.entity_id not in used]
+            if not infos:
+                continue
+            best = detect_device_types(DEVICE_TYPES, infos, name_hint=g.name)
+            if not best:
+                continue
+            d = best[0]
+            card = d.as_dict()
+            card["device_key"] = g.key
+            card["device_name"] = g.name
+            card["area"] = g.area
+            card["alternatives"] = [b.type_id for b in best[1:4]]
+            out.append(card)
+        out.sort(key=lambda x: -float(x.get("confidence", 0)))
+        return out
+
+    def auto_add_devices(self, device_key: str = "") -> list[Device]:
+        """Legt alle sicher erkannten Geräte direkt an (ohne Dubletten)."""
+        added: list[Device] = []
+        for card in self.auto_detect_devices(device_key):
+            dev = self.add_device(
+                str(card["type_id"]),
+                name=str(card.get("device_name") or card.get("name") or ""),
+                roles={str(k): str(v) for k, v in dict(card.get("roles") or {}).items()},
+            )
+            if dev is not None:
+                added.append(dev)
+        return added
 
     # ------------------------------------------------------------------ #
     # Regelzyklus
@@ -666,6 +723,53 @@ class SolarFlowEngine:
     # ------------------------------------------------------------------ #
     # Snapshot fuer die Oberflaeche
     # ------------------------------------------------------------------ #
+    def compare(self) -> dict[str, Any]:
+        """Energiefluss und Vergleichswerte für die Oberfläche.
+
+        Stellt PV-Erzeugung, Einspeisung, Netzbezug, Speicher und die
+        Leistungsaufnahme jedes Geräts gegenüber – mit Anteilen (%). So sieht
+        man auf einen Blick, wohin die Sonne geht und was ein Gerät nutzt.
+        """
+        pv = self._read(self.sources.get("pv"))
+        feed_in = self._read(self.sources.get("feed_in"))
+        grid = self._read(self.sources.get("grid_import"))
+
+        def val(r: Reading | None) -> float | None:
+            return r.value if r and r.is_number else None
+
+        items: list[dict[str, Any]] = []
+        for a in self.last_assessments:
+            power = a.details.get("power_w")
+            if power is None:
+                continue
+            items.append(
+                {
+                    "device_id": a.device_id,
+                    "name": a.name,
+                    "emoji": a.emoji,
+                    "accent": a.accent,
+                    "power_w": float(power),
+                    "state": a.state,
+                }
+            )
+        items.sort(key=lambda x: -abs(float(x["power_w"])))
+        total_device_w = sum(abs(float(x["power_w"])) for x in items)
+        pv_w = val(pv)
+        for x in items:
+            share = abs(float(x["power_w"])) / total_device_w if total_device_w else 0.0
+            x["share"] = round(share, 3)
+        self_use = None
+        if pv_w is not None and pv_w > 0 and total_device_w > 0:
+            self_use = round(min(1.0, total_device_w / pv_w), 3)
+        return {
+            "pv_w": pv_w,
+            "feed_in_w": val(feed_in),
+            "grid_import_w": val(grid),
+            "devices_w": round(total_device_w),
+            "self_use": self_use,
+            "devices": items,
+        }
+
     def snapshot(self) -> dict[str, Any]:
         feed_in = self._read(self.sources.get("feed_in"))
         d = self.last_decision
@@ -685,6 +789,8 @@ class SolarFlowEngine:
             "feed_in_age_s": feed_in.age_s if feed_in else None,
             "storage_temp": primary_storage.value if primary_storage and primary_storage.is_number else None,
             "grid_import_w": (self._read(self.sources.get("grid_import")) or Reading("", None)).value,
+            "pv_w": (self._read(self.sources.get("pv")) or Reading("", None)).value,
+            "compare": self.compare(),
             "settings": self.settings.as_dict(),
             "layers": [
                 {

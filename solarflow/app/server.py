@@ -134,12 +134,30 @@ async def create_app() -> web.Application:
         await engine.refresh_registry(force=force)
         return web.json_response(engine.device_groups())
 
+    async def auto_detect(req: web.Request) -> web.Response:
+        """Schlägt automatisch erkannte Geräte vor (ohne sie anzulegen)."""
+        device_key = req.query.get("device_key", "")
+        await engine.refresh_registry()
+        return web.json_response(engine.auto_detect_devices(device_key))
+
+    async def auto_add(req: web.Request) -> web.Response:
+        """Legt alle sicher erkannten Geräte direkt an."""
+        body = await req.json() if req.can_read_body else {}
+        device_key = str(body.get("device_key", "")) if body else ""
+        await engine.refresh_registry()
+        added = engine.auto_add_devices(device_key)
+        if added:
+            engine.log("ok", f"{len(added)} Gerät(e) automatisch erkannt und angelegt.")
+        await engine.async_run_cycle()
+        return web.json_response({"added": len(added), "snapshot": engine.snapshot()})
+
     async def add_device(req: web.Request) -> web.Response:
         body = await req.json()
         dev = engine.add_device(
             str(body.get("type_id", "")),
             name=str(body.get("name", "")),
             roles={str(k): str(v) for k, v in (body.get("roles") or {}).items()},
+            emoji=str(body.get("emoji", "")),
         )
         if dev is None:
             raise web.HTTPBadRequest(text="unbekannter Geraetetyp")
@@ -209,6 +227,8 @@ async def create_app() -> web.Application:
     app.router.add_get("/api/suggest", suggestions)
     app.router.add_get("/api/device_types", device_types)
     app.router.add_get("/api/devices/registry", device_registry)
+    app.router.add_get("/api/devices/auto", auto_detect)
+    app.router.add_post("/api/devices/auto", auto_add)
     app.router.add_post("/api/devices", add_device)
     app.router.add_post("/api/device/update", update_device)
     app.router.add_post("/api/device/remove", remove_device)

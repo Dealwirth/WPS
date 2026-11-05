@@ -49,6 +49,8 @@ class DeviceAssessment:
     reason_en: str = ""
     actions: list[Action] = field(default_factory=list)
     details: dict[str, Any] = field(default_factory=dict)
+    emoji: str = "🧩"
+    accent: str = "violet"
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -56,6 +58,8 @@ class DeviceAssessment:
             "name": self.name,
             "type_id": self.type_id,
             "icon": self.icon,
+            "emoji": self.emoji,
+            "accent": self.accent,
             "enabled": self.enabled,
             "active": self.active,
             "state": self.state,
@@ -324,7 +328,10 @@ STRATEGIES = {
 def assess(ctx: DeviceContext) -> DeviceAssessment:
     """Bewertet ein Gerät mit seiner Strategie."""
     fn = STRATEGIES.get(ctx.spec.strategy, _assess_surplus_switch)
-    return fn(ctx)
+    a = fn(ctx)
+    a.emoji = ctx.device.emoji or ctx.spec.emoji
+    a.accent = ctx.spec.accent
+    return a
 
 
 def role_kind_of(spec: DeviceTypeSpec, key: str) -> RoleKind | None:
