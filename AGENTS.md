@@ -181,3 +181,23 @@ sudo docker run -d --name solarflow-test --network host \
 - [ ] Am Ende alles auf Originalzustand zurücksetzen: WW-Sollwert 52 °C,
       beide Automationen `on`; temporäre Token-Datei `/tmp/real_ha_token.txt`
       löschen.
+
+## Betrieb der realen Instanz (wichtige Handgriffe)
+
+- **Ingress-Sitzung erzeugen** (sonst liefert jede Ingress-URL `401`):
+  per WebSocket `supervisor/api` mit `POST /ingress/session` ein
+  `session`-Token holen und als Cookie `ingress_session=<token>` an die
+  Ingress-URL hängen. Ein Supervisor-Login-Token allein genügt nicht.
+- **Seitenleisten-Eintrag** einer App: Der Supervisor registriert das Panel
+  nur, wenn `ingress_panel` gesetzt ist. `panel_admin` in `config.yaml`
+  steuert nur die Sichtbarkeit für Nicht-Admin-Konten (Standard `true`).
+  Zum Nachziehen ohne Neuinstallation:
+  `POST /addons/<slug>/options {"ingress_panel": true}`.
+- **Build**: `build.yaml` ist veraltet (Supervisor warnt). Arch-spezifische
+  Basis-Images gehören direkt in den `Dockerfile` (`ARG BUILD_FROM`).
+- **Store-Update**: `POST /store/reload` erkennt die neue Version,
+  `POST /store/addons/<slug>/update` baut/aktualisiert (Antwortet evtl. mit
+  `unknown_error`, obwohl es klappt – Status über `/addons/<slug>/info` prüfen).
+- **Schatten-Modus** ist die Standardbetriebsart: SolarFlow rechnet und zeigt
+  den Vorschlag, schreibt aber nichts. Alte Automationen bleiben unangetastet.
+
