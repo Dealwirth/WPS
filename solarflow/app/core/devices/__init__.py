@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from ._model import Device
 from ._spec import DeviceCategory, DeviceTypeSpec, RoleKind, RoleSpec, SettingSpec
-from .catalog import DEVICE_TYPES
+from .catalog import DEVICE_TYPES, IMAGE_IDS
 from .discover import DetectedDevice, detect_device_types, suggest_roles
 from .registry import DeviceEntity, DeviceGroup, group_by_device
 from .strategies import DeviceAssessment, DeviceContext, assess
@@ -36,7 +36,8 @@ def make_device(
     name: str = "",
     roles: dict[str, str] | None = None,
     settings: dict[str, float] | None = None,
-    emoji: str = "",
+    image: str = "",
+    accent: str = "",
 ) -> Device | None:
     """Legt ein Gerät aus einer Vorlage an (mit sicheren Standardwerten)."""
     spec = TYPES_BY_ID.get(type_id)
@@ -54,7 +55,8 @@ def make_device(
         name=name or spec.name_de,
         roles={str(k): str(v) for k, v in (roles or {}).items() if v},
         settings=merged,
-        emoji=emoji or "",
+        image=image or "",
+        accent=accent or "",
     )
 
 
@@ -94,27 +96,28 @@ def device_view(device: Device) -> dict[str, object]:
     if spec is not None:
         data["spec"] = spec.as_dict()
         data["icon"] = spec.icon
-        data["emoji"] = device.emoji or spec.emoji
-        data["accent"] = spec.accent
+        data["image"] = device.image or spec.image
+        data["accent"] = device.accent or spec.accent
         data["name_de"] = spec.name_de
         data["name_en"] = spec.name_en
     return data
 
 
-def device_emoji(device: Device) -> str:
-    """Bild (Emoji) eines Geräts – eigene Wahl vor Vorlagen-Bild."""
+def device_image(device: Device) -> str:
+    """Bild-Kennung eines Geräts – eigene Wahl vor Vorlagen-Bild."""
     spec = TYPES_BY_ID.get(device.type_id)
-    return device.emoji or (spec.emoji if spec else "🧩")
+    return device.image or (spec.image if spec else "generic")
 
 
 def device_accent(device: Device) -> str:
-    """Akzentfarbe eines Geräts."""
+    """Akzentfarbe eines Geräts – eigene Wahl vor Vorlagen-Farbe."""
     spec = TYPES_BY_ID.get(device.type_id)
-    return spec.accent if spec else "violet"
+    return device.accent or (spec.accent if spec else "violet")
 
 
 __all__ = [
     "DEVICE_TYPES",
+    "IMAGE_IDS",
     "TYPES_BY_ID",
     "DetectedDevice",
     "Device",
@@ -131,7 +134,7 @@ __all__ = [
     "clamp_device_settings",
     "detect_device_types",
     "device_accent",
-    "device_emoji",
+    "device_image",
     "device_view",
     "group_by_device",
     "make_device",

@@ -282,9 +282,10 @@ class SolarFlowEngine:
         *,
         name: str = "",
         roles: dict[str, str] | None = None,
-        emoji: str = "",
+        image: str = "",
+        accent: str = "",
     ) -> Device | None:
-        dev = make_device(type_id, name=name, roles=roles, emoji=emoji)
+        dev = make_device(type_id, name=name, roles=roles, image=image, accent=accent)
         if dev is None:
             return None
         self.devices.append(dev)
@@ -300,8 +301,10 @@ class SolarFlowEngine:
             dev.name = str(patch["name"])
         if "enabled" in patch:
             dev.enabled = bool(patch["enabled"])
-        if "emoji" in patch:
-            dev.emoji = str(patch["emoji"] or "")
+        if "image" in patch:
+            dev.image = str(patch["image"] or "")
+        if "accent" in patch:
+            dev.accent = str(patch["accent"] or "")
         if isinstance(patch.get("roles"), dict):
             for k, v in patch["roles"].items():
                 if v:
@@ -746,7 +749,7 @@ class SolarFlowEngine:
                 {
                     "device_id": a.device_id,
                     "name": a.name,
-                    "emoji": a.emoji,
+                    "image": a.image,
                     "accent": a.accent,
                     "power_w": float(power),
                     "state": a.state,

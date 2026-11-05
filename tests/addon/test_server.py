@@ -111,10 +111,10 @@ async def test_entities_endpoint(client):
     assert isinstance(await resp.json(), list)
 
 
-async def test_device_types_have_emoji(client):
+async def test_device_types_have_image(client):
     resp = await client.get("/api/device_types")
     types = await resp.json()
-    assert all(t.get("emoji") for t in types)
+    assert all(t.get("image") for t in types)
     assert all(t.get("accent") for t in types)
 
 
@@ -135,17 +135,17 @@ async def test_auto_add_endpoint(client):
     assert any(d["type_id"] == "wallbox" for d in data["snapshot"]["devices"])
 
 
-async def test_add_device_with_emoji(client):
+async def test_add_device_with_image(client):
     resp = await client.post(
         "/api/devices",
-        json={"type_id": "battery", "name": "Speicher", "roles": {"soc": "sensor.demo_soc"}, "emoji": "🔋"},
+        json={"type_id": "battery", "name": "Speicher", "roles": {"soc": "sensor.demo_soc"}, "image": "generic"},
     )
     assert resp.status == 200
     snap = await resp.json()
     dev = next(d for d in snap["devices"] if d["name"] == "Speicher")
-    assert dev["emoji"] == "🔋"
+    assert dev["image"] == "generic"
     assessment = next(a for a in snap["assessments"] if a["device_id"] == dev["id"])
-    assert assessment["emoji"] == "🔋"
+    assert assessment["image"] == "generic"
 
 
 async def test_snapshot_has_compare(client):

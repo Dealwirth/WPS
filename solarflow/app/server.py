@@ -157,7 +157,8 @@ async def create_app() -> web.Application:
             str(body.get("type_id", "")),
             name=str(body.get("name", "")),
             roles={str(k): str(v) for k, v in (body.get("roles") or {}).items()},
-            emoji=str(body.get("emoji", "")),
+            image=str(body.get("image", "")),
+            accent=str(body.get("accent", "")),
         )
         if dev is None:
             raise web.HTTPBadRequest(text="unbekannter Geraetetyp")

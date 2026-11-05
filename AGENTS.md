@@ -233,11 +233,17 @@ sudo docker run -d --name solarflow-test --network host \
 
 ## Oberfläche & Erkennung (ab 2.1.0)
 
-- **Bild je Gerät**: Jede Vorlage hat `emoji` (Anzeigebild) und `accent`
-  (Akzentfarbe) in `catalog.py`. Ein Gerät kann sein Bild überschreiben
-  (`Device.emoji`, leer = Vorlagenbild). Anzeige über `device_emoji` /
-  `device_view`; `DeviceAssessment.emoji` / `.accent` reichen es in die
-  Oberfläche durch (`assess()` setzt beide zentral).
+- **Bild je Gerät**: Jede Vorlage hat `image` (SVG-Symbolkennung) und `accent`
+  (Akzentfarbe) in `catalog.py`. Ein Gerät kann Bild und Farbe überschreiben
+  (`Device.image` / `Device.accent`, leer = Vorlagenwert). Anzeige über
+  `device_image` / `device_view`; `DeviceAssessment.image` / `.accent` reichen
+  es in die Oberfläche durch (`assess()` setzt beide zentral).
+- **SVG-Symbolset**: Die Symbole liegen inline als `<symbol id="i-…">` in
+  `static/index.html` (Kennungen: `heat_pump`, `heating_rod`, `air_conditioner`,
+  `wallbox`, `ev_charger`, `battery`, `pool_pump`, `water_pump`,
+  `washing_machine`, `dryer`, `dishwasher`, `generic_switch`, `generic`,
+  `sun`, `feed`, `grid`). Kein externes Symbolset nötig; die Oberfläche
+  rendert sie über `<use href="#i-…">` und färbt sie mit `currentColor`.
 - **Automatische Geräteerkennung**: `discover.detect_device_types(specs,
   entities, name_hint=…)` ist eine reine Funktion. Sie verlangt **alle**
   Pflichtrollen einer Vorlage; ohne Pflichtrolle mindestens zwei belegte

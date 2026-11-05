@@ -21,8 +21,10 @@ class Device:
     enabled: bool = True
     roles: dict[str, str] = field(default_factory=dict)  # role_key -> entity_id
     settings: dict[str, float] = field(default_factory=dict)
-    #: Abweichendes Bild (Emoji) für dieses Gerät; leer = Vorlagen-Bild.
-    emoji: str = ""
+    #: Abweichendes Bild-Symbol für dieses Gerät; leer = Vorlagen-Bild.
+    image: str = ""
+    #: Abweichende Akzentfarbe für dieses Gerät; leer = Vorlagen-Farbe.
+    accent: str = ""
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -32,7 +34,8 @@ class Device:
             "enabled": self.enabled,
             "roles": dict(self.roles),
             "settings": dict(self.settings),
-            "emoji": self.emoji,
+            "image": self.image,
+            "accent": self.accent,
         }
 
     @classmethod
@@ -46,5 +49,6 @@ class Device:
             enabled=bool(data.get("enabled", True)),
             roles={str(k): str(v) for k, v in dict(roles).items() if v},
             settings={str(k): float(v) for k, v in dict(settings).items() if isinstance(v, (int, float))},
-            emoji=str(data.get("emoji") or ""),
+            image=str(data.get("image") or ""),
+            accent=str(data.get("accent") or ""),
         )

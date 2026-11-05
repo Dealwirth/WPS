@@ -11,6 +11,7 @@ sys.path.insert(0, str(CORE_PARENT))
 
 from core.devices import (
     DEVICE_TYPES,
+    IMAGE_IDS,
     TYPES_BY_ID,
     DeviceContext,
     DeviceEntity,
@@ -75,22 +76,28 @@ class TestCatalog(unittest.TestCase):
     def test_make_device_unknown_type(self):
         self.assertIsNone(make_device("does_not_exist"))
 
-    def test_every_type_has_emoji_and_accent(self):
+    def test_every_type_has_image_and_accent(self):
         for t in DEVICE_TYPES:
-            self.assertTrue(t.emoji, t.type_id)
-            self.assertNotEqual(t.emoji, "🧩", t.type_id)
+            self.assertTrue(t.image, t.type_id)
             self.assertTrue(t.accent, t.type_id)
+            self.assertIn(t.image, IMAGE_IDS, t.type_id)
 
-    def test_emoji_in_card(self):
+    def test_image_in_card(self):
         cards = {c["type_id"]: c for c in type_cards()}
-        self.assertEqual(cards["wallbox"]["emoji"], "🚗")
+        self.assertEqual(cards["wallbox"]["image"], "wallbox")
         self.assertEqual(cards["heat_pump"]["accent"], "amber")
 
-    def test_device_emoji_override(self):
-        d = make_device("wallbox", emoji="🏎️")
-        self.assertEqual(device_view(d)["emoji"], "🏎️")
+    def test_device_image_override(self):
+        d = make_device("wallbox", image="ev_charger")
+        self.assertEqual(device_view(d)["image"], "ev_charger")
         d2 = make_device("wallbox")
-        self.assertEqual(device_view(d2)["emoji"], "🚗")
+        self.assertEqual(device_view(d2)["image"], "wallbox")
+
+    def test_device_accent_override(self):
+        d = make_device("wallbox", accent="pink")
+        self.assertEqual(device_view(d)["accent"], "pink")
+        d2 = make_device("wallbox")
+        self.assertEqual(device_view(d2)["accent"], "teal")
 
 
 class TestAutoDetect(unittest.TestCase):

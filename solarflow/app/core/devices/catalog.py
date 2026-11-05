@@ -87,7 +87,7 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     # ---------------------------------------------------------------- Wärme
     DeviceTypeSpec(
         type_id="heat_pump",
-        emoji="♨️",
+        image="heat_pump",
         accent="amber",
         name_de="Wärmepumpe / Warmwasser",
         name_en="Heat pump / Hot water",
@@ -101,7 +101,7 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     ),
     DeviceTypeSpec(
         type_id="heating_rod",
-        emoji="🔥",
+        image="heating_rod",
         accent="coral",
         name_de="Heizstab / Tauchsieder",
         name_en="Heating rod / Immersion heater",
@@ -115,7 +115,7 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     ),
     DeviceTypeSpec(
         type_id="air_conditioner",
-        emoji="❄️",
+        image="air_conditioner",
         accent="sky",
         name_de="Klimaanlage",
         name_en="Air conditioner",
@@ -133,7 +133,7 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     # --------------------------------------------------------------- Strom
     DeviceTypeSpec(
         type_id="wallbox",
-        emoji="🚗",
+        image="wallbox",
         accent="teal",
         name_de="Wallbox",
         name_en="Wallbox",
@@ -147,7 +147,7 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     ),
     DeviceTypeSpec(
         type_id="ev_charger",
-        emoji="🔌",
+        image="ev_charger",
         accent="sky",
         name_de="E-Auto / Ladegerät",
         name_en="EV / Charger",
@@ -161,7 +161,7 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     ),
     DeviceTypeSpec(
         type_id="battery",
-        emoji="🔋",
+        image="battery",
         accent="violet",
         name_de="PV-Speicher (Batterie)",
         name_en="PV battery",
@@ -178,7 +178,7 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     ),
     DeviceTypeSpec(
         type_id="pool_pump",
-        emoji="🏊",
+        image="pool_pump",
         accent="sky",
         name_de="Poolpumpe",
         name_en="Pool pump",
@@ -192,7 +192,7 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     ),
     DeviceTypeSpec(
         type_id="water_pump",
-        emoji="💧",
+        image="water_pump",
         accent="sky",
         name_de="Pumpe / Bewässerung",
         name_en="Pump / Irrigation",
@@ -206,7 +206,7 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     ),
     DeviceTypeSpec(
         type_id="washing_machine",
-        emoji="🧺",
+        image="washing_machine",
         accent="violet",
         name_de="Waschmaschine",
         name_en="Washing machine",
@@ -220,7 +220,7 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     ),
     DeviceTypeSpec(
         type_id="dryer",
-        emoji="🌀",
+        image="dryer",
         accent="pink",
         name_de="Trockner",
         name_en="Dryer",
@@ -234,7 +234,7 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     ),
     DeviceTypeSpec(
         type_id="dishwasher",
-        emoji="🍽️",
+        image="dishwasher",
         accent="teal",
         name_de="Geschirrspüler",
         name_en="Dishwasher",
@@ -248,7 +248,7 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
     ),
     DeviceTypeSpec(
         type_id="generic_switch",
-        emoji="⚡",
+        image="generic_switch",
         accent="amber",
         name_de="Freier Verbraucher",
         name_en="Generic load",
@@ -261,3 +261,6 @@ DEVICE_TYPES: tuple[DeviceTypeSpec, ...] = (
         settings=_surplus_settings(on=1500, off=500),
     ),
 )
+
+#: Kennungen aller Bild-Symbole im SVG-Set (static/index.html).
+IMAGE_IDS: frozenset[str] = frozenset(t.image for t in DEVICE_TYPES) | {"generic"}

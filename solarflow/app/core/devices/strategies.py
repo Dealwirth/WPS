@@ -49,7 +49,7 @@ class DeviceAssessment:
     reason_en: str = ""
     actions: list[Action] = field(default_factory=list)
     details: dict[str, Any] = field(default_factory=dict)
-    emoji: str = "🧩"
+    image: str = ""
     accent: str = "violet"
 
     def as_dict(self) -> dict[str, Any]:
@@ -58,7 +58,7 @@ class DeviceAssessment:
             "name": self.name,
             "type_id": self.type_id,
             "icon": self.icon,
-            "emoji": self.emoji,
+            "image": self.image,
             "accent": self.accent,
             "enabled": self.enabled,
             "active": self.active,
@@ -329,8 +329,8 @@ def assess(ctx: DeviceContext) -> DeviceAssessment:
     """Bewertet ein Gerät mit seiner Strategie."""
     fn = STRATEGIES.get(ctx.spec.strategy, _assess_surplus_switch)
     a = fn(ctx)
-    a.emoji = ctx.device.emoji or ctx.spec.emoji
-    a.accent = ctx.spec.accent
+    a.image = ctx.device.image or ctx.spec.image
+    a.accent = ctx.device.accent or ctx.spec.accent
     return a
 
 

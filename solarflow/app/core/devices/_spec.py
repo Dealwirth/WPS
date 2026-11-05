@@ -89,7 +89,7 @@ class DeviceTypeSpec:
     roles: tuple[RoleSpec, ...]
     settings: tuple[SettingSpec, ...] = ()
     safety_level: str = "standard"
-    emoji: str = "🧩"
+    image: str = ""
     accent: str = "violet"
 
     def role(self, key: str) -> RoleSpec | None:
@@ -110,7 +110,7 @@ class DeviceTypeSpec:
             "summary_de": self.summary_de,
             "summary_en": self.summary_en,
             "icon": self.icon,
-            "emoji": self.emoji,
+            "image": self.image,
             "accent": self.accent,
             "category": self.category.value,
             "strategy": self.strategy,

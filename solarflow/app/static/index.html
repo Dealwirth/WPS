@@ -182,6 +182,8 @@
   .dev-type{font-size:11px;color:var(--muted)}
   .dev-state{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;
     padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.09);white-space:nowrap}
+  .sdot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.25);display:inline-block}
+  .sdot.on{background:var(--teal);box-shadow:0 0 8px var(--teal);animation:blink 1.8s ease-in-out infinite}
   .dev-reason{font-size:12px;color:rgba(238,241,255,.82);margin:8px 0;line-height:1.38;min-height:32px}
   .dev-det{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
   .pill{font-size:11px;background:rgba(255,255,255,.07);padding:3px 8px;border-radius:8px;font-variant-numeric:tabular-nums}
@@ -213,12 +215,119 @@
   .role-row label{font-size:12.5px}.role-row .req{color:var(--coral);font-size:11px}
   .modal-foot{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
   .empty{padding:26px;text-align:center;border:1px dashed var(--line);border-radius:var(--r-md);color:var(--muted)}
-  .emoji-pick{display:flex;flex-wrap:wrap;gap:7px;margin:6px 0 2px}
-  .emoji-pick button{font-size:19px;padding:6px 9px;border-radius:11px;background:rgba(255,255,255,.06);line-height:1}
-  .emoji-pick button.sel{background:linear-gradient(135deg,var(--teal),var(--violet));box-shadow:0 6px 16px rgba(90,70,220,.4)}
+  /* Bild-Set (SVG): faerbt sich je Geraet ueber --accent */
+  .ico{display:inline-flex;align-items:center;justify-content:center;line-height:0}
+  .ico svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.7;
+    stroke-linecap:round;stroke-linejoin:round}
+  .dev-ico .ico svg{width:26px;height:26px}
+  .card-tile .cico .ico svg{width:27px;height:27px}
+  .pick-grid .ico svg{width:24px;height:24px}
+  .dev-ico,.card-tile .cico{color:var(--accent);position:relative}
+  .dev-ico::after,.card-tile .cico::after{content:"";position:absolute;inset:0;border-radius:inherit;
+    background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.22),transparent 60%);pointer-events:none}
+  .fico{color:var(--accent)}
+  .fico .ico svg{width:26px;height:26px}
+  .pick-grid{display:flex;flex-wrap:wrap;gap:7px;margin:6px 0 2px}
+  .pick-grid button{width:42px;height:42px;padding:0;border-radius:12px;background:rgba(255,255,255,.06);
+    display:grid;place-items:center;color:rgba(238,241,255,.85)}
+  .pick-grid button svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.7;
+    stroke-linecap:round;stroke-linejoin:round}
+  .pick-grid button.sel{background:linear-gradient(135deg,var(--teal),var(--violet));color:#fff;
+    box-shadow:0 6px 16px rgba(90,70,220,.4)}
+  .swatch{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 2px}
+  .swatch button{width:28px;height:28px;padding:0;border-radius:50%;border:2px solid rgba(255,255,255,.25)}
+  .swatch button.sel{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.25)}
 </style>
 </head>
 <body>
+<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:none">
+  <!-- SolarFlow Bild-Set: reine Linien-Symbole, faerben sich ueber currentColor -->
+  <symbol id="i-heat_pump" viewBox="0 0 24 24">
+    <rect x="2.5" y="7.5" width="19" height="10" rx="3"/>
+    <circle cx="8.6" cy="12.5" r="2.7"/>
+    <path d="M8.6 12.5V10.1M8.6 12.5l2.2 1.3M8.6 12.5l-2.2 1.3"/>
+    <path d="M14.6 10.3v4.4M17.1 10.3v4.4M19.6 10.3v4.4"/>
+  </symbol>
+  <symbol id="i-heating_rod" viewBox="0 0 24 24">
+    <circle cx="12" cy="3.7" r="1.5"/>
+    <path d="M12 5.2V14"/>
+    <path d="M7.4 16.8c1.1 0 1.1 1 2.3 1s1.1-1 2.3-1 1.1 1 2.3 1 1.1-1 2.3-1"/>
+    <path d="M7.4 19.8c1.1 0 1.1 1 2.3 1s1.1-1 2.3-1 1.1 1 2.3 1 1.1-1 2.3-1"/>
+  </symbol>
+  <symbol id="i-air_conditioner" viewBox="0 0 24 24">
+    <rect x="2.5" y="5" width="19" height="6.6" rx="2.2"/>
+    <path d="M6 8.5h12"/>
+    <path d="M7.5 14.6c0 1.4.9 1.4.9 2.9M11.5 14.6c0 1.4.9 1.4.9 2.9M15.5 14.6c0 1.4.9 1.4.9 2.9"/>
+  </symbol>
+  <symbol id="i-wallbox" viewBox="0 0 24 24">
+    <rect x="3.5" y="3.5" width="9" height="14" rx="2.6"/>
+    <path d="M8.1 6.4l-2.3 4.3h2.9l-1 3.7 3.6-4.8H9.4z" fill="currentColor" stroke="none"/>
+    <path d="M12.5 11.4c2.6 0 2.6 4.6 5.2 4.6h2.2"/>
+    <circle cx="20" cy="16" r="1.2"/>
+  </symbol>
+  <symbol id="i-ev_charger" viewBox="0 0 24 24">
+    <path d="M9 3.5v3M11.6 3.5v3"/>
+    <rect x="7" y="6.5" width="6.6" height="6.6" rx="2.2"/>
+    <path d="M10.3 13.1v2.3c0 1.4 1.2 2.6 2.6 2.6h2.2c1.4 0 2.6 1.2 2.6 2.6v.4"/>
+  </symbol>
+  <symbol id="i-battery" viewBox="0 0 24 24">
+    <rect x="2.5" y="7" width="16.5" height="10" rx="2.6"/>
+    <path d="M21.5 10v4"/>
+    <path d="M11.4 8.7l-3 4.8h2.8l-1 3.3 3.3-4.8H10.7z" fill="currentColor" stroke="none"/>
+  </symbol>
+  <symbol id="i-pool_pump" viewBox="0 0 24 24">
+    <path d="M17 3.4v5M20 3.4v5M17 5.9h3"/>
+    <rect x="2.5" y="9.5" width="19" height="8.5" rx="3.2"/>
+    <path d="M6.5 14c1.2 0 1.2 1 2.4 1s1.2-1 2.4-1 1.2 1 2.4 1 1.2-1 2.4-1 1.2 1 2.4 1"/>
+  </symbol>
+  <symbol id="i-water_pump" viewBox="0 0 24 24">
+    <path d="M12 2.8s5 5.7 5 9.2a5 5 0 0 1-10 0c0-3.5 5-9.2 5-9.2z"/>
+    <path d="M12 16.6a3 3 0 1 0-3-3"/>
+  </symbol>
+  <symbol id="i-washing_machine" viewBox="0 0 24 24">
+    <rect x="4" y="3" width="16" height="18" rx="2.8"/>
+    <path d="M4 8.2h16"/>
+    <circle cx="7.3" cy="5.6" r="1"/>
+    <circle cx="12" cy="14.2" r="4"/>
+    <path d="M9 14.2c1 0 1-.8 2-.8s1 .8 2 .8 1-.8 2-.8"/>
+  </symbol>
+  <symbol id="i-dryer" viewBox="0 0 24 24">
+    <rect x="4" y="3" width="16" height="18" rx="2.8"/>
+    <path d="M4 8.2h16"/>
+    <circle cx="7.3" cy="5.6" r="1"/>
+    <circle cx="12" cy="14.2" r="4"/>
+    <path d="M12 10.2a4 4 0 1 0 4 4"/>
+  </symbol>
+  <symbol id="i-dishwasher" viewBox="0 0 24 24">
+    <rect x="4" y="3" width="16" height="18" rx="2.8"/>
+    <path d="M4 8.2h16"/>
+    <path d="M7.5 5.6h.02M10.2 5.6h.02"/>
+    <path d="M8.5 11.6v5M12 11.6v5M15.5 11.6v5"/>
+    <path d="M6.6 19h10.8"/>
+  </symbol>
+  <symbol id="i-generic_switch" viewBox="0 0 24 24">
+    <path d="M12 3.6v8"/>
+    <path d="M7.2 7.3a6.2 6.2 0 1 0 9.6 0"/>
+  </symbol>
+  <symbol id="i-generic" viewBox="0 0 24 24">
+    <rect x="7" y="7" width="10" height="10" rx="2.6"/>
+    <path d="M10 3.6V7M14 3.6V7M10 17v3.4M14 17v3.4M3.6 10H7M3.6 14H7M17 10h3.4M17 14h3.4"/>
+  </symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="4.2"/>
+    <path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/>
+  </symbol>
+  <symbol id="i-feed" viewBox="0 0 24 24">
+    <path d="M12 20.4V6.2"/>
+    <path d="M6.6 11.6L12 6.2l5.4 5.4"/>
+    <path d="M4 3.6h16"/>
+  </symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24">
+    <path d="M8.4 3.4 6 20.6M15.6 3.4 18 20.6"/>
+    <path d="M4.6 8.4h14.8M3.6 14h16.8"/>
+    <path d="M6.9 3.4h10.2"/>
+  </symbol>
+</svg>
 <div class="aura" aria-hidden="true"><span></span><span></span><span></span></div>
 <div class="wrap" id="app"><div class="loading">SolarFlow lädt …</div></div>
 <div class="toast" id="toast"></div>
@@ -243,7 +352,8 @@ const T={
    allCats:"Alle",cat_heat:"Wärme",cat_electric:"Strom",cat_mobility:"Mobilität",cat_storage:"Speicher",cat_generic:"Sonstiges",
    edit:"Bearbeiten",remove:"Entfernen",on:"an",offState:"aus",enabled:"Aktiv",disabled:"Pausiert",
    rolePick:"– bitte wählen –",name:"Name",discover:"✨ Automatisch erkennen",save2:"Übernehmen",cancel:"Abbrechen",
-   fromDevice:"Aus Gerät",allEntities:"– alle Entitäten –",emoji:"Bild",
+   fromDevice:"Aus Gerät",allEntities:"– alle Entitäten –",image:"Bild",icon:"Symbol",color:"Farbe",
+   pickIcon:"Symbol wählen",pickColor:"Farbe wählen",
    st_idle:"Bereit",st_charging:"Lädt",st_heating:"Heizt",st_holding:"Hält",st_ready:"Bereit",st_blocked:"Gesperrt",
    removeQ:"Dieses Gerät wirklich entfernen?",req:"Pflicht",
    flow:"Energiefluss",pv:"PV-Erzeugung",gridIn:"Netzbezug",surplus:"Überschuss",devicesW:"Geräte zusammen",
@@ -270,7 +380,8 @@ const T={
    allCats:"All",cat_heat:"Heat",cat_electric:"Electric",cat_mobility:"Mobility",cat_storage:"Storage",cat_generic:"Other",
    edit:"Edit",remove:"Remove",on:"on",offState:"off",enabled:"Active",disabled:"Paused",
    rolePick:"– please choose –",name:"Name",discover:"✨ Auto-detect",save2:"Apply",cancel:"Cancel",
-   fromDevice:"From device",allEntities:"– all entities –",emoji:"Picture",
+   fromDevice:"From device",allEntities:"– all entities –",image:"Picture",icon:"Icon",color:"Colour",
+   pickIcon:"Choose icon",pickColor:"Choose colour",
    st_idle:"Idle",st_charging:"Charging",st_heating:"Heating",st_holding:"Holding",st_ready:"Ready",st_blocked:"Blocked",
    removeQ:"Really remove this device?",req:"required",
    flow:"Energy flow",pv:"PV generation",gridIn:"Grid import",surplus:"Surplus",devicesW:"Devices total",
@@ -280,7 +391,8 @@ const T={
    foundNone:"No new devices found. You can still add one yourself below.",
    scanAgain:"Scan again",autoAdded:"device(s) added.",alternatives:"alternatives"}
 };
-const EMOJI_CHOICES=["♨️","🔥","❄️","🚗","🔌","🔋","🏊","💧","🧺","🌀","🍽️","⚡","🏎️","🚿","🛁","🧊","☀️","🔆","🛠️","🏠"];
+const ICON_IDS=["heat_pump","heating_rod","air_conditioner","wallbox","ev_charger","battery","pool_pump","water_pump","washing_machine","dryer","dishwasher","generic_switch","generic"];
+const ACC_NAMES=["amber","coral","violet","teal","sky","pink"];
 let LANG=localStorage.getItem("sf_lang")||((navigator.language||"de").slice(0,2)==="en"?"en":"de");
 let SNAP=null, TAB="home", DRAFT=null, CATALOG=null, GROUPS=[], STORE_CAT="all", EDIT=null;
 let FOUND=null, SCANNING=false;
@@ -311,6 +423,8 @@ function statusLabel(st){return st==="blocked"?t("blocked"):st==="warn"?t("warn"
 function devStateLabel(st){return t("st_"+st)||st;}
 function nf(n,d){return n==null?"–":Number(n).toLocaleString(LANG==="de"?"de-DE":"en-US",{maximumFractionDigits:d==null?0:d});}
 function accent(name){return ACC[name]||ACC.violet;}
+// Bild-Symbol (SVG aus dem eingebetteten Set) als HTML.
+function ico(id){return `<span class="ico"><svg><use href="#i-${esc(id||"generic")}"/></svg></span>`;}
 
 function render(){
   if(!SNAP){$("#app").innerHTML=`<div class="loading">${t("loading")}</div>`;return;}
@@ -375,9 +489,9 @@ function home(s){
 function devCard(a){
   const det=Object.entries(a.details||{}).map(([k,v])=>`<span class="pill">${esc(k)}: ${esc(v)}</span>`).join("");
   return `<div class="dev ${a.active?"active":""} ${a.enabled?"":"off"}" style="--accent:${accent(a.accent)}">
-    <div class="dev-head"><div class="dev-ico">${esc(a.emoji||"⚙️")}</div>
+    <div class="dev-head"><div class="dev-ico">${ico(a.image)}</div>
       <div style="flex:1;min-width:0"><div class="dev-name">${esc(a.name)}</div><div class="dev-type">${esc(a.type_id)}</div></div>
-      <span class="dev-state">${a.active?"🟢":"⚪"} ${devStateLabel(a.state)}</span></div>
+      <span class="dev-state"><i class="sdot ${a.active?"on":""}"></i>${devStateLabel(a.state)}</span></div>
     <div class="dev-reason">${esc(LANG==="de"?a.reason_de:a.reason_en)}</div>
     <div class="dev-det">${det}</div></div>`;
 }
@@ -386,14 +500,14 @@ function flow(s){
   const max=Math.max(1000, ...["pv_w","feed_in_w","grid_import_w"].map(k=>Math.abs(c[k]||0)), Math.abs(c.devices_w||0));
   const node=(icon,label,val,sub,color)=>{
     const w=Math.min(100,(Math.abs(val||0)/max)*100);
-    return `<div class="fnode" style="--accent:${color}"><div class="fico">${icon}</div>
+    return `<div class="fnode" style="--accent:${color}"><div class="fico">${ico(icon)}</div>
       <div><div style="font-size:13px">${label}</div><div class="fbar"><i style="width:${w}%"></i></div>
       <div class="fsub">${sub||""}</div></div>
       <div class="fval">${val!=null?nf(val)+" W":"–"}</div></div>`;
   };
   const devs=(c.devices||[]).map(d=>{
     const w=Math.min(100,Math.abs(d.power_w||0)/max*100);
-    return `<div class="fnode" style="--accent:${accent(d.accent)}"><div class="fico">${esc(d.emoji||"⚙️")}</div>
+    return `<div class="fnode" style="--accent:${accent(d.accent)}"><div class="fico">${ico(d.image)}</div>
       <div><div style="font-size:13px">${esc(d.name)}</div><div class="fbar"><i style="width:${w}%"></i></div>
       <div class="fsub">${devStateLabel(d.state)} · ${Math.round((d.share||0)*100)} % ${t("devicesW")}</div></div>
       <div class="fval">${nf(d.power_w)} W</div></div>`;
@@ -402,10 +516,10 @@ function flow(s){
   const hasAny=c.pv_w!=null||c.feed_in_w!=null||c.grid_import_w!=null||devs;
   return `<h2>${t("flow")}</h2>
     <div class="flow">
-      ${node("☀️",t("pv"),c.pv_w,"","#ffb020")}
-      ${node("🔌",t("surplus"),c.feed_in_w,"","#12c6a5")}
-      ${node("🏭",t("gridIn"),c.grid_import_w,"","#ff5d5d")}
-      ${node("⚙️",t("devicesW"),c.devices_w,`${(c.devices||[]).length} ${t("store")}`,"#7b5cff")}
+      ${node("sun",t("pv"),c.pv_w,"","#ffb020")}
+      ${node("feed",t("surplus"),c.feed_in_w,"","#12c6a5")}
+      ${node("grid",t("gridIn"),c.grid_import_w,"","#ff5d5d")}
+      ${node("generic",t("devicesW"),c.devices_w,`${(c.devices||[]).length} ${t("store")}`,"#7b5cff")}
       ${devs?`<h2>${t("myDevices")}</h2>${devs}`:""}
       ${hasAny?`<div class="selfuse"><div class="ring" style="--p:${su}"><b>${su}%</b></div>
         <div><b>${t("selfUse")}</b><div class="hint" style="margin:2px 0 0">${t("flow")}: ${c.devices_w!=null?nf(c.devices_w):"–"} W / ${c.pv_w!=null?nf(c.pv_w):"–"} W</div></div></div>`
@@ -417,7 +531,7 @@ function store(s){
     const a=(s.assessments||[]).find(x=>x.device_id===d.id);
     const roles=Object.entries(d.roles||{}).map(([k,v])=>`<div class="src"><span>${esc(k)}</span><code>${esc(v)}</code></div>`).join("")||`<div class="src"><span>–</span><code>–</code></div>`;
     return `<div class="dev ${a&&a.active?"active":""} ${d.enabled?"":"off"}" style="--accent:${accent(d.accent)}">
-      <div class="dev-head"><div class="dev-ico">${esc(d.emoji||"⚙️")}</div>
+      <div class="dev-head"><div class="dev-ico">${ico(d.image)}</div>
         <div style="flex:1;min-width:0"><div class="dev-name">${esc(d.name)}</div><div class="dev-type">${esc(LANG==="de"?d.name_de:d.name_en)}</div></div>
         <label class="sw"><input type="checkbox" data-deven="${d.id}" ${d.enabled?"checked":""}/><span></span></label></div>
       <div style="margin:6px 0">${roles}</div>
@@ -428,7 +542,7 @@ function store(s){
   const cats=["all","heat","electric","mobility","storage","generic"];
   const catBar=cats.map(c=>`<button class="${STORE_CAT===c?"sel":""}" data-cat="${c}">${t(c==="all"?"allCats":"cat_"+c)}</button>`).join("");
   const tiles=(s.device_types||[]).filter(x=>STORE_CAT==="all"||x.category===STORE_CAT).map(x=>`
-    <div class="card card-tile" data-addtype="${x.type_id}" style="--accent:${accent(x.accent)}"><div class="cico">${esc(x.emoji||"🧩")}</div>
+    <div class="card card-tile" data-addtype="${x.type_id}" style="--accent:${accent(x.accent)}"><div class="cico">${ico(x.image)}</div>
       <div class="cbody"><div class="ctitle">${esc(LANG==="de"?x.name_de:x.name_en)}</div>
       <div class="csum">${esc(LANG==="de"?x.summary_de:x.summary_en)}</div></div></div>`).join("");
 
@@ -442,7 +556,7 @@ function store(s){
 function foundBox(){
   if(!FOUND||!FOUND.length)return `<div class="empty">${t("foundNone")}</div>`;
   const cards=FOUND.map((f,i)=>`<div class="card card-tile" data-foundidx="${i}" style="--accent:${accent("teal")}">
-    <div class="cico">${esc((SNAP.device_types||[]).find(x=>x.type_id===f.type_id)?.emoji||"🧩")}</div>
+    <div class="cico">${ico((SNAP.device_types||[]).find(x=>x.type_id===f.type_id)?.image||"generic")}</div>
     <div class="cbody"><div class="ctitle">${esc(f.device_name||f.name)} <span class="conf">${Math.round(f.confidence*100)} %</span></div>
       <div class="csum">${esc(typeName(f.type_id))}${f.area?" · "+esc(f.area):""}</div>
       <div class="creason">${esc(Object.values(f.roles).slice(0,3).join(", "))}</div></div></div>`).join("");
@@ -495,13 +609,17 @@ function entityPool(){
   if(EDIT&&EDIT.device_key){const g=groupByKey(EDIT.device_key);if(g)return g.entities||[];}
   return CATALOG||[];
 }
-function emojiPicker(current){
-  return `<div class="emoji-pick">${EMOJI_CHOICES.map(e=>`<button type="button" class="${e===current?"sel":""}" data-emoji="${e}">${e}</button>`).join("")}</div>`;
+function iconPicker(current){
+  return `<div class="pick-grid">${ICON_IDS.map(i=>`<button type="button" class="${i===current?"sel":""}" data-image="${i}" title="${i}">${ico(i)}</button>`).join("")}</div>`;
+}
+function colorPicker(current){
+  return `<div class="swatch">${ACC_NAMES.map(c=>`<button type="button" class="${c===current?"sel":""}" data-color="${c}" style="background:${accent(c)}" title="${c}"></button>`).join("")}</div>`;
 }
 function editModal(s){
   const spec=(s.device_types||[]).find(x=>x.type_id===EDIT.type_id)||{roles:[],settings:[],name_de:EDIT.type_id};
   const nameVal=EDIT.name||(LANG==="de"?spec.name_de:spec.name_en);
-  const curEmoji=EDIT.emoji||spec.emoji||"🧩";
+  const curImage=EDIT.image||spec.image||"generic";
+  const curColor=EDIT.accent||spec.accent||"violet";
   const groups=GROUPS||[];
   const groupSel=`<div class="srow"><label>${t("fromDevice")}</label>
     <select data-dgroup><option value="">${t("allEntities")}</option>
@@ -524,11 +642,12 @@ function editModal(s){
       <output data-dout="${x.key}">${val}${x.unit?" "+x.unit:""}</output></div>`;
   }).join("");
   return `<div class="modal" data-modal><div class="box">
-    <div class="mh"><div class="dev-ico" id="modalIco">${esc(curEmoji)}</div><div><h3>${esc(LANG==="de"?spec.name_de:spec.name_en)}</h3>
+    <div class="mh"><div class="dev-ico" id="modalIco" style="--accent:${accent(curColor)}">${ico(curImage)}</div><div><h3>${esc(LANG==="de"?spec.name_de:spec.name_en)}</h3>
       <div class="dev-type">${esc(LANG==="de"?spec.summary_de:spec.summary_en)}</div></div></div>
     ${groupSel}
     <div class="srow"><label>${t("name")}</label><input type="text" data-dname value="${esc(nameVal)}"/></div>
-    <div class="srow" style="align-items:start"><label>${t("emoji")}</label><div style="grid-column:2/4">${emojiPicker(curEmoji)}</div></div>
+    <div class="srow" style="align-items:start"><label>${t("icon")}</label><div style="grid-column:2/4">${iconPicker(curImage)}</div></div>
+    <div class="srow" style="align-items:start"><label>${t("color")}</label><div style="grid-column:2/4">${colorPicker(curColor)}</div></div>
     <button class="ghost" data-ddiscover>${t("discover")}</button>
     <div style="margin-top:10px">${roleRows}</div>
     ${setRows?`<h2>${t("settings")}</h2>${setRows}`:""}
@@ -565,9 +684,12 @@ function wire(){
   const dsc=document.querySelector("[data-ddiscover]");if(dsc)dsc.onclick=discoverRoles;
   const dsv=document.querySelector("[data-dsave]");if(dsv)dsv.onclick=saveDevice;
   const dgrp=document.querySelector("[data-dgroup]");if(dgrp)dgrp.onchange=()=>{EDIT.device_key=dgrp.value;render();};
-  document.querySelectorAll("[data-emoji]").forEach(el=>el.onclick=()=>{EDIT.emoji=el.dataset.emoji;
-    document.querySelectorAll("[data-emoji]").forEach(x=>x.classList.toggle("sel",x.dataset.emoji===EDIT.emoji));
-    const ico=document.querySelector("#modalIco");if(ico)ico.textContent=EDIT.emoji;});
+  document.querySelectorAll("[data-image]").forEach(el=>el.onclick=()=>{EDIT.image=el.dataset.image;
+    document.querySelectorAll("[data-image]").forEach(x=>x.classList.toggle("sel",x.dataset.image===EDIT.image));
+    const ic=document.querySelector("#modalIco");if(ic)ic.innerHTML=ico(EDIT.image);});
+  document.querySelectorAll("[data-color]").forEach(el=>el.onclick=()=>{EDIT.accent=el.dataset.color;
+    document.querySelectorAll("[data-color]").forEach(x=>x.classList.toggle("sel",x.dataset.color===EDIT.accent));
+    const ic=document.querySelector("#modalIco");if(ic)ic.style.setProperty("--accent",accent(EDIT.accent));});
   document.querySelectorAll("input[data-dset]").forEach(el=>el.oninput=()=>{
     EDIT.settings=Object.assign({},EDIT.settings,{[el.dataset.dset]:Number(el.value)});
     const o=document.querySelector(`output[data-dout="${el.dataset.dset}"]`);if(o)o.textContent=el.value;});
@@ -600,19 +722,19 @@ async function openAdd(typeId){
   if(!CATALOG)await loadCatalog();
   if(!GROUPS.length)await loadGroups();
   const spec=(SNAP.device_types||[]).find(x=>x.type_id===typeId)||{};
-  EDIT={mode:"add",type_id:typeId,name:LANG==="de"?spec.name_de:spec.name_en,roles:{},settings:{},emoji:spec.emoji||""};
+  EDIT={mode:"add",type_id:typeId,name:LANG==="de"?spec.name_de:spec.name_en,roles:{},settings:{},image:spec.image||"",accent:spec.accent||""};
   render();
 }
 function openEdit(id){
   const d=(SNAP.devices||[]).find(x=>x.id===id);if(!d)return;
-  EDIT={mode:"edit",id:d.id,type_id:d.type_id,name:d.name,roles:Object.assign({},d.roles),settings:Object.assign({},d.settings),emoji:d.emoji||""};
+  EDIT={mode:"edit",id:d.id,type_id:d.type_id,name:d.name,roles:Object.assign({},d.roles),settings:Object.assign({},d.settings),image:d.image||"",accent:d.accent||""};
   if(!CATALOG)loadCatalog();
   if(!GROUPS.length)loadGroups();
   render();
 }
 function openFound(idx){
   const f=(FOUND||[])[idx];if(!f)return;
-  EDIT={mode:"add",type_id:f.type_id,name:f.device_name||f.name,roles:Object.assign({},f.roles),settings:{},device_key:f.device_key||"",emoji:""};
+  EDIT={mode:"add",type_id:f.type_id,name:f.device_name||f.name,roles:Object.assign({},f.roles),settings:{},device_key:f.device_key||"",image:"",accent:""};
   if(!CATALOG)loadCatalog();
   render();
 }
@@ -627,9 +749,9 @@ async function saveDevice(){
   const roles={};document.querySelectorAll("[data-role]").forEach(el=>{if(el.value)roles[el.dataset.role]=el.value;});
   let r;
   if(EDIT.mode==="add"){
-    r=await api("/api/devices",{method:"POST",body:JSON.stringify({type_id:EDIT.type_id,name,roles,emoji:EDIT.emoji||""})});
+    r=await api("/api/devices",{method:"POST",body:JSON.stringify({type_id:EDIT.type_id,name,roles,image:EDIT.image||"",accent:EDIT.accent||""})});
   }else{
-    r=await api("/api/device/update",{method:"POST",body:JSON.stringify({id:EDIT.id,name,roles,settings:EDIT.settings||{},emoji:EDIT.emoji||""})});
+    r=await api("/api/device/update",{method:"POST",body:JSON.stringify({id:EDIT.id,name,roles,settings:EDIT.settings||{},image:EDIT.image||"",accent:EDIT.accent||""})});
   }
   if(r){SNAP=r;EDIT=null;toast(t("saved"));render();}
 }

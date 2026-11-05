@@ -1,7 +1,9 @@
 ## 2.1.0
 
-- **Jedes Gerät hat sein eigenes Bild** (Emoji) – in Vorlagen festgelegt und je
-  Gerät frei wählbar. Gerätekarten und Store-Kacheln zeigen das Bild.
+- **Jedes Gerät hat sein eigenes Bild** (SVG-Symbol) und eine Akzentfarbe – in
+  Vorlagen festgelegt und je Gerät frei wählbar (Symbol- und Farbwähler im
+  Bearbeiten-Dialog). Gerätekarten, Store-Kacheln und der Energiefluss zeigen
+  das Symbol in der Gerätefarbe.
 - **Automatische Geräteerkennung**: „Geräte suchen“ prüft die echten
   HA-Geräte und schlägt passende Typen samt Entitäten vor – mit
   Sicherheits-Prozent. „Alle übernehmen“ legt sie in einem Schritt an.
