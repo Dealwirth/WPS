@@ -201,7 +201,7 @@ const T={
    removeQ:"Really remove this device?",req:"required"}
 };
 let LANG=localStorage.getItem("sf_lang")||((navigator.language||"de").slice(0,2)==="en"?"en":"de");
-let SNAP=null, TAB="home", DRAFT=null, CATALOG=null, STORE_CAT="all", EDIT=null;
+let SNAP=null, TAB="home", DRAFT=null, CATALOG=null, GROUPS=[], STORE_CAT="all", EDIT=null;
 const $=s=>document.querySelector(s);
 const t=k=>(T[LANG]||T.de)[k]||k;
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -217,6 +217,7 @@ async function api(path,opts){
   catch(e){toast(String(e.message||e));return null;}
 }
 async function refresh(){const s=await api("/api/snapshot"); if(s){SNAP=s; if(!DRAFT)DRAFT=Object.assign({},s.settings); render();}}
+async function loadGroups(){const g=await api("/api/devices/registry");if(g)GROUPS=g;}
 
 function statusLabel(st){return st==="blocked"?t("blocked"):st==="warn"?t("warn"):st==="active"?t("activeLayer"):t("ok");}
 function devStateLabel(st){return t("st_"+st)||st;}
@@ -336,7 +337,7 @@ function log(s){
 
 // ---------------------------------------------------------------- Modal
 function groupByKey(key){
-  return (SNAP&&SNAP.device_groups||[]).find(g=>g.key===key);
+  return (GROUPS||[]).find(g=>g.key===key);
 }
 function entityPool(){
   if(EDIT&&EDIT.device_key){const g=groupByKey(EDIT.device_key);if(g)return g.entities||[];}
@@ -345,7 +346,7 @@ function entityPool(){
 function editModal(s){
   const spec=(s.device_types||[]).find(x=>x.type_id===EDIT.type_id)||{roles:[],settings:[],name_de:EDIT.type_id};
   const nameVal=EDIT.name||(LANG==="de"?spec.name_de:spec.name_en);
-  const groups=s.device_groups||[];
+  const groups=GROUPS||[];
   const groupSel=`<div class="srow"><label>${t("fromDevice")}</label>
     <select data-dgroup><option value="">${t("allEntities")}</option>
       ${groups.map(g=>`<option value="${g.key}" ${EDIT.device_key===g.key?"selected":""}>${esc(g.name)}${g.area?" · "+esc(g.area):""} (${g.entity_count})</option>`).join("")}
@@ -382,7 +383,7 @@ function editModal(s){
 function wire(){
   document.querySelectorAll("[data-mode]").forEach(el=>el.onclick=async()=>{const r=await api("/api/mode",{method:"POST",body:JSON.stringify({mode:el.dataset.mode})});if(r){SNAP=r;render();}});
   document.querySelectorAll("[data-emg]").forEach(el=>el.onclick=async()=>{const r=await api("/api/emergency",{method:"POST",body:JSON.stringify({on:el.dataset.emg==="1"})});if(r){SNAP=r;render();}});
-  document.querySelectorAll("[data-tab]").forEach(el=>el.onclick=()=>{TAB=el.dataset.tab;if((TAB==="sources"||TAB==="store")&&!CATALOG)loadCatalog();render();});
+  document.querySelectorAll("[data-tab]").forEach(el=>el.onclick=()=>{TAB=el.dataset.tab;if((TAB==="sources"||TAB==="store")&&!CATALOG)loadCatalog();if(TAB==="store")loadGroups();render();});
   const lang=document.querySelector("[data-lang]");if(lang)lang.onclick=()=>{LANG=LANG==="de"?"en":"de";localStorage.setItem("sf_lang",LANG);render();};
   const save=document.querySelector("[data-save]");if(save)save.onclick=saveSettings;
   document.querySelectorAll("input[data-range]").forEach(el=>el.oninput=()=>{DRAFT=Object.assign({},DRAFT,{[el.dataset.range]:Number(el.value)});const o=document.querySelector(`output[data-out="${el.dataset.range}"]`);if(o)o.textContent=el.value;});
@@ -424,6 +425,7 @@ async function saveSources(){
 }
 async function openAdd(typeId){
   if(!CATALOG)await loadCatalog();
+  if(!GROUPS.length)await loadGroups();
   const spec=(SNAP.device_types||[]).find(x=>x.type_id===typeId)||{};
   EDIT={mode:"add",type_id:typeId,name:LANG==="de"?spec.name_de:spec.name_en,roles:{},settings:{}};
   render();
@@ -432,6 +434,7 @@ function openEdit(id){
   const d=(SNAP.devices||[]).find(x=>x.id===id);if(!d)return;
   EDIT={mode:"edit",id:d.id,type_id:d.type_id,name:d.name,roles:Object.assign({},d.roles),settings:Object.assign({},d.settings)};
   if(!CATALOG)loadCatalog();
+  if(!GROUPS.length)loadGroups();
   render();
 }
 async function discoverRoles(){

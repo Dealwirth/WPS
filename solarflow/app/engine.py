@@ -416,6 +416,10 @@ class SolarFlowEngine:
     def device_groups(self) -> list[dict[str, object]]:
         return [g.as_dict() for g in self._groups]
 
+    def device_types(self) -> list[dict[str, object]]:
+        """Alle Geräte-Vorlagen für den Store."""
+        return type_cards()
+
     # ------------------------------------------------------------------ #
     # Regelzyklus
     # ------------------------------------------------------------------ #
@@ -696,7 +700,6 @@ class SolarFlowEngine:
             ],
             "device_types": type_cards(),
             "devices": [device_view(d) for d in self.devices],
-            "device_groups": [g.as_dict() for g in self._groups],
             "assessments": [a.as_dict() for a in self.last_assessments],
             "audit": self.audit[:60],
             "sources": dict(self.sources),
