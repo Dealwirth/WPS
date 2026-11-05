@@ -1,5 +1,5 @@
 name: "SolarFlow"
-version: "1.0.0"
+version: "1.0.1"
 slug: "solarflow"
 description: "Sichere PV-Ueberschuss-Automatik fuer Waermepumpe, Warmwasser und Laden"
 url: "https://github.com/Dealwirth/WPS"
@@ -16,7 +16,7 @@ ingress_port: 8099
 ingress_stream: true
 panel_icon: "mdi:solar-power"
 panel_title: "SolarFlow"
-panel_admin: false
+panel_admin: true
 host_network: false
 map:
   - config:rw
