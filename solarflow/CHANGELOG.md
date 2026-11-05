@@ -1,3 +1,13 @@
+## 2.0.1
+
+- **Echte HA-Geräte im Store**: der Store liest das Home-Assistant-Geräte-,
+  Entitäts- und Bereichs-Register und zeigt echte Geräte zum Zuordnen.
+- **Mehrere gleiche Geräte** möglich (z. B. zwei Wallboxen), jedes schaltet
+  unabhängig.
+- Geräte ohne Pflicht-Entität werden angezeigt, aber nie geschaltet.
+- Fehler behoben: `/api/device_types` antwortete mit 500; die Oberfläche lädt
+  das Geräte-Register jetzt bei Bedarf statt in jedem Statusabruf.
+
 ## 2.0.0
 
 - **Geräte-Store**: beliebige Geräte hinzufügen, nicht nur die Wärmepumpe.
