@@ -15,7 +15,7 @@ from aiohttp.test_utils import TestClient, TestServer
 APP_DIR = Path(__file__).resolve().parents[2] / "solarflow" / "app"
 sys.path.insert(0, str(APP_DIR))
 
-import server  # noqa: E402
+import server
 
 
 class FakeClient:
