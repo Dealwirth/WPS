@@ -1,0 +1,11 @@
+# Architektur-spezifische Basis-Images fuer den Add-on-Builder.
+# Ohne diese Datei nutzt Supervisor die Standard-Architektur (amd64) aus dem
+# Dockerfile – der Build schlaegt dann auf aarch64 (Raspberry Pi) fehl.
+build_from:
+  aarch64: ghcr.io/home-assistant/aarch64-base-python:3.13-alpine3.20
+  amd64: ghcr.io/home-assistant/amd64-base-python:3.13-alpine3.20
+labels:
+  org.opencontainers.image.title: "SolarFlow"
+  org.opencontainers.image.description: "Sichere PV-Ueberschuss-Automatik fuer Waermepumpe, Warmwasser und Laden"
+  org.opencontainers.image.source: "https://github.com/Dealwirth/WPS"
+  org.opencontainers.image.licenses: "MIT"
