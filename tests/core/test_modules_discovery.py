@@ -49,8 +49,21 @@ class TestModuleRegistry(unittest.TestCase):
         deps = dependents_of("thermal", {"core", "thermal", "heating"})
         self.assertIn("heating", deps)
 
-    def test_default_enabled_is_core_only(self):
-        self.assertEqual(default_enabled_modules(), {"core"})
+    def test_default_enabled_display_modules(self):
+        """Anzeige-Module sind standardmäßig an; schaltende Geräte-Module nicht.
+
+        thermal (Warmwasser) ist bewusst standardmäßig aktiv, weil es das
+        Kernmodul ist – es schaltet aber nur im Modus "active". Wallbox,
+        Heizung und flexible Lasten bleiben standardmäßig aus, bis der Nutzer
+        sie ausdrücklich freigibt.
+        """
+        enabled = default_enabled_modules()
+        self.assertIn("core", enabled)
+        self.assertIn("thermal", enabled)
+        self.assertIn("safety", enabled)
+        self.assertNotIn("wallbox", enabled)
+        self.assertNotIn("heating", enabled)
+        self.assertNotIn("flexible_loads", enabled)
 
 
 class TestDiscovery(unittest.TestCase):

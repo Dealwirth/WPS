@@ -17,15 +17,21 @@ from homeassistant.helpers import selector
 from .const import (
     CONF_EV_ENTITY,
     CONF_FEED_IN_ENTITY,
+    CONF_FORECAST_HORIZON_H,
     CONF_GRID_IMPORT_ENTITY,
     CONF_HEATING_CLIMATE,
+    CONF_HEATING_SHIFT_C,
     CONF_MAX_GRID_IMPORT_W,
     CONF_MODE,
     CONF_PV_ENTITY,
     CONF_SENSOR_MAX_AGE_S,
     CONF_WALLBOX_ENTITY,
+    CONF_WALLBOX_MIN_CHARGE_A,
+    CONF_WALLBOX_OFF_W,
+    CONF_WALLBOX_ON_W,
     CONF_WW_BOOST_TEMP,
     CONF_WW_HYGIENE_MIN_TEMP,
+    CONF_WW_HYSTERESIS_C,
     CONF_WW_HYSTERESIS_NUMBER,
     CONF_WW_MIN_TEMP,
     CONF_WW_NORMAL_TEMP,
@@ -34,12 +40,18 @@ from .const import (
     CONF_WW_WATER_HEATER,
     DEFAULT_FEED_IN_OFF_W,
     DEFAULT_FEED_IN_ON_W,
+    DEFAULT_FORECAST_HORIZON_H,
+    DEFAULT_HEATING_SHIFT_C,
     DEFAULT_MAX_GRID_IMPORT_W,
     DEFAULT_MIN_PAUSE_MIN,
     DEFAULT_MIN_RUNTIME_MIN,
     DEFAULT_SENSOR_MAX_AGE_S,
+    DEFAULT_WALLBOX_MIN_CHARGE_A,
+    DEFAULT_WALLBOX_OFF_W,
+    DEFAULT_WALLBOX_ON_W,
     DEFAULT_WW_BOOST_TEMP,
     DEFAULT_WW_HYGIENE_MIN_TEMP,
+    DEFAULT_WW_HYSTERESIS_C,
     DEFAULT_WW_MIN_TEMP,
     DEFAULT_WW_NORMAL_TEMP,
     DOMAIN,
@@ -176,6 +188,26 @@ class SolarFlowOptionsFlow(OptionsFlow):
                 vol.Optional(
                     CONF_MAX_GRID_IMPORT_W, default=current.get(CONF_MAX_GRID_IMPORT_W, DEFAULT_MAX_GRID_IMPORT_W)
                 ): _num(1000, 60000, 100, "W"),
+                vol.Optional(
+                    CONF_WW_HYSTERESIS_C, default=current.get(CONF_WW_HYSTERESIS_C, DEFAULT_WW_HYSTERESIS_C)
+                ): _num(0, 15, 0.5, "°C"),
+                vol.Optional(
+                    CONF_WALLBOX_ON_W, default=current.get(CONF_WALLBOX_ON_W, DEFAULT_WALLBOX_ON_W)
+                ): _num(0, 20000, 100, "W"),
+                vol.Optional(
+                    CONF_WALLBOX_OFF_W, default=current.get(CONF_WALLBOX_OFF_W, DEFAULT_WALLBOX_OFF_W)
+                ): _num(0, 20000, 100, "W"),
+                vol.Optional(
+                    CONF_WALLBOX_MIN_CHARGE_A,
+                    default=current.get(CONF_WALLBOX_MIN_CHARGE_A, DEFAULT_WALLBOX_MIN_CHARGE_A),
+                ): _num(6, 32, 1, "A"),
+                vol.Optional(
+                    CONF_HEATING_SHIFT_C, default=current.get(CONF_HEATING_SHIFT_C, DEFAULT_HEATING_SHIFT_C)
+                ): _num(0, 10, 0.5, "°C"),
+                vol.Optional(
+                    CONF_FORECAST_HORIZON_H,
+                    default=current.get(CONF_FORECAST_HORIZON_H, DEFAULT_FORECAST_HORIZON_H),
+                ): _num(1, 72, 1, "h"),
                 vol.Optional("verify_writes", default=current.get("verify_writes", True)): selector.BooleanSelector(),
             }
         )

@@ -45,6 +45,22 @@ Integration **nie** anhalten. Deshalb sind in `pyproject.toml` für
 `runtime.py`, `panel.py` und `__init__.py` die Ruff-Regeln `BLE001`/`S110`
 bewusst ignoriert. Nicht „aufräumen".
 
+## Module & benutzerdefinierte Schwellen
+
+Jedes Modul in `core/modules/` trägt ein `default_enabled`-Flag. Anzeige- und
+Sicherheitsmodule (core, thermal, safety, tariff, goals, forecast) sind
+standardmäßig an; **schaltende** Zusatzmodule (wallbox, heating,
+flexible_loads) bleiben aus, bis der Nutzer sie freigibt. Das Wallbox-Modul
+schaltet über dasselbe Sicherheits-Gate wie Warmwasser; Heizung und flexible
+Lasten beraten nur.
+
+Alle Schwellen sind benutzerdefiniert einstellbar – im Panel (Tab
+„Einstellungen", gruppiert), im Options-Flow und über den Dienst
+`set_settings`. Neue Schwellen immer an **drei** Stellen ergänzen:
+`core/models.py` (Settings + `as_dict`), `core/limits.py` (Klemmen), sowie
+Panel/`const.py`/`config_flow.py`/`services.py`. Danach `tests/core/` laufen
+lassen.
+
 ## Bekannte Fallstricke
 
 - **Blockierende Dateizugriffe im Event-Loop vermeiden.** Das Lesen von

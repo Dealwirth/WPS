@@ -23,6 +23,7 @@ SPEC = ModuleSpec(
         "them in the plan. Display only, no switching."
     ),
     category=ModuleCategory.ENERGY,
+    default_enabled=True,
     icon="mdi:clock-time-eight",
     requires=("core",),
     provides=("tariff_windows",),

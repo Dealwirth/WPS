@@ -54,6 +54,12 @@ class Settings:
     ww_normal_temp: float = 52.0
     ww_min_temp: float = 45.0
     ww_hygiene_min_temp: float = 50.0
+    ww_hysteresis_c: float = 2.0
+    wallbox_on_w: float = 4200.0
+    wallbox_off_w: float = 2000.0
+    wallbox_min_charge_a: float = 6.0
+    heating_shift_c: float = 2.0
+    forecast_horizon_h: float = 24.0
     sensor_max_age_s: float = 300.0
     max_grid_import_w: float = 11000.0
     verify_writes: bool = True
@@ -71,6 +77,12 @@ class Settings:
             "ww_normal_temp": self.ww_normal_temp,
             "ww_min_temp": self.ww_min_temp,
             "ww_hygiene_min_temp": self.ww_hygiene_min_temp,
+            "ww_hysteresis_c": self.ww_hysteresis_c,
+            "wallbox_on_w": self.wallbox_on_w,
+            "wallbox_off_w": self.wallbox_off_w,
+            "wallbox_min_charge_a": self.wallbox_min_charge_a,
+            "heating_shift_c": self.heating_shift_c,
+            "forecast_horizon_h": self.forecast_horizon_h,
             "sensor_max_age_s": self.sensor_max_age_s,
             "max_grid_import_w": self.max_grid_import_w,
             "verify_writes": self.verify_writes,

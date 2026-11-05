@@ -23,6 +23,7 @@ SPEC = ModuleSpec(
         "Time and power limits stay hard."
     ),
     category=ModuleCategory.DEVICES,
+    default_enabled=False,
     icon="mdi:washing-machine",
     requires=("core",),
     provides=("scheduled_loads",),

@@ -23,6 +23,7 @@ SPEC = ModuleSpec(
         "The last instance – it can lock down all automation at once."
     ),
     category=ModuleCategory.SAFETY,
+    default_enabled=True,
     icon="mdi:shield-check",
     requires=("core",),
     provides=("monitoring", "emergency_stop", "self_healing", "audit"),

@@ -79,6 +79,20 @@ class TestLimits(unittest.TestCase):
         s, _ = validate_settings(s)
         self.assertGreaterEqual(s.ww_boost_temp, s.ww_normal_temp)
 
+    def test_validate_settings_fixes_wallbox_hysteresis(self):
+        s = Settings(wallbox_on_w=2000, wallbox_off_w=3000)
+        s, notes = validate_settings(s)
+        self.assertLess(s.wallbox_off_w, s.wallbox_on_w)
+        self.assertTrue(notes)
+
+    def test_validate_settings_clamps_new_values(self):
+        s = Settings(ww_hysteresis_c=99, wallbox_min_charge_a=99, heating_shift_c=99, forecast_horizon_h=999)
+        s, _ = validate_settings(s)
+        self.assertLessEqual(s.ww_hysteresis_c, 15)
+        self.assertLessEqual(s.wallbox_min_charge_a, 32)
+        self.assertLessEqual(s.heating_shift_c, 10)
+        self.assertLessEqual(s.forecast_horizon_h, 72)
+
 
 class TestMachine(unittest.TestCase):
     def test_no_boost_without_surplus(self):
@@ -313,6 +327,49 @@ class TestPlanner(unittest.TestCase):
         state, changed, _ = m.update(now=100, feed_in_w=5000, data_ok=True, demand=False, settings=s)
         self.assertEqual(state, PlantState.NORMAL)
         self.assertTrue(changed)
+
+
+class TestWallboxModule(unittest.TestCase):
+    def _eval(self, *, modules, feed, wallbox_on, mode=Mode.ACTIVE):
+        m = Machine()
+        s = Settings(mode=mode, wallbox_on_w=4200, wallbox_off_w=2000)
+        return evaluate(
+            machine=m,
+            settings=s,
+            feed_in=r(feed),
+            storage=r(45),
+            grid_import=None,
+            now=0,
+            previous_feed_in=feed - 100,
+            device_min=10,
+            device_max=60,
+            ww_entity="water_heater.x",
+            enabled_modules=modules,
+            wallbox_entity="switch.wallbox",
+            wallbox_on=wallbox_on,
+        )
+
+    def test_wallbox_off_when_module_disabled(self):
+        d = self._eval(modules={"core", "thermal"}, feed=6000, wallbox_on=False)
+        self.assertFalse(any(a.entity_id == "switch.wallbox" for a in d.actions))
+
+    def test_wallbox_turns_on_with_surplus(self):
+        d = self._eval(modules={"core", "thermal", "wallbox"}, feed=6000, wallbox_on=False)
+        self.assertTrue(any(a.service == "switch.turn_on" for a in d.actions))
+
+    def test_wallbox_turns_off_when_surplus_gone(self):
+        d = self._eval(modules={"core", "thermal", "wallbox"}, feed=100, wallbox_on=True)
+        self.assertTrue(any(a.service == "switch.turn_off" for a in d.actions))
+
+    def test_wallbox_blocked_in_shadow_mode(self):
+        d = self._eval(modules={"core", "thermal", "wallbox"}, feed=6000, wallbox_on=False, mode=Mode.SHADOW)
+        self.assertEqual([a for a in d.actions if a.entity_id == "switch.wallbox"], [])
+        self.assertTrue(d.blocked)
+
+    def test_heating_module_advises_only(self):
+        d = self._eval(modules={"core", "thermal", "heating"}, feed=6000, wallbox_on=False)
+        self.assertFalse(any(a.entity_id == "switch.wallbox" for a in d.actions))
+        self.assertTrue(any("Heizung" in t for _, t in d.steps))
 
 
 if __name__ == "__main__":

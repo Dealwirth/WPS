@@ -35,7 +35,13 @@
           "ww_hygiene_min_temp": "Hygiene-Mindesttemperatur (°C)",
           "sensor_max_age_s": "Maximales Datenalter (s)",
           "max_grid_import_w": "Maximaler Netzbezug (W)",
-          "verify_writes": "Schreibwerte zurücklesen"
+          "verify_writes": "Schreibwerte zurücklesen",
+          "ww_hysteresis_c": "Warmwasser-Hysterese (°C)",
+          "wallbox_on_w": "Wallbox laden ein ab (W)",
+          "wallbox_off_w": "Wallbox laden aus unter (W)",
+          "wallbox_min_charge_a": "Wallbox Mindeststrom (A)",
+          "heating_shift_c": "Vorheizen Heizkurve (°C)",
+          "forecast_horizon_h": "Prognose-Horizont (h)"
         }
       }
     }

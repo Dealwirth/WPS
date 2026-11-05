@@ -23,6 +23,7 @@ SPEC = ModuleSpec(
         "hard; when in doubt it does not intervene."
     ),
     category=ModuleCategory.DEVICES,
+    default_enabled=False,
     icon="mdi:radiator",
     requires=("core", "thermal"),
     provides=("heating_curve_shift", "buffer_charge"),

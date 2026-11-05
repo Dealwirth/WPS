@@ -24,6 +24,7 @@ SPEC = ModuleSpec(
         "minimum charging time and target SOC are respected."
     ),
     category=ModuleCategory.DEVICES,
+    default_enabled=False,
     icon="mdi:ev-station",
     requires=("core",),
     provides=("wallbox_surplus", "ev_charge_plan"),

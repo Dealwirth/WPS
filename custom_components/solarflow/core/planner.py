@@ -35,13 +35,21 @@ def evaluate(
     ww_entity: str,
     emergency_stop: bool = False,
     current_temp: float | None = None,
+    enabled_modules: set[str] | None = None,
+    wallbox_entity: str | None = None,
+    wallbox_on: bool | None = None,
 ) -> Decision:
     """Berechnet die Entscheidung für einen Zyklus.
 
     ``current_temp`` ist der aktuell am Gerät gesetzte Sollwert. Weicht er vom
     Ziel ab, wird der Zielwert erneut geschrieben – so heilt SolarFlow nach
     einem blockierten oder manuell veränderten Wert von selbst.
+
+    ``enabled_modules`` steuert, welche Module handeln dürfen. Das Wallbox-
+    Modul schaltet nur bei ausdrücklicher Freigabe und läuft durch dasselbe
+    Sicherheits-Gate. Heizung und flexible Lasten beraten nur.
     """
+    modules = enabled_modules or {"core"}
     ctx = SafetyContext(
         feed_in=feed_in,
         settings=settings,
@@ -78,7 +86,7 @@ def evaluate(
         steps.append(("warn", f"Bereich: {r_de}"))
 
     # Bedarf nur relevant für den Übergang in den Boost.
-    need = _demand(storage, settings.ww_boost_temp)
+    need = _demand(storage, settings.ww_boost_temp, settings.ww_hysteresis_c)
     storage_temp = storage.value if storage and storage.is_number else "?"
     steps.append(("info", f"Bedarf: {'ja' if need else 'nein'} (Speicher {storage_temp} °C)"))
 
@@ -117,6 +125,41 @@ def evaluate(
     # Bedarfs-Schutz: Boost ohne Bedarf verhindern.
     if new_state == PlantState.BOOST and not need and settings.mode == Mode.ACTIVE:
         steps.append(("warn", "Boost ohne Bedarf – kein Schreiben."))
+
+    # --- Wallbox-Modul (schaltet nur bei Freigabe, über dasselbe Gate) ---
+    if "wallbox" in modules and wallbox_entity and feed is not None:
+        want_on = feed >= settings.wallbox_on_w
+        if want_on and wallbox_on is not True:
+            steps.append(("info", f"Wallbox: Überschuss {feed:.0f} W ≥ {settings.wallbox_on_w:.0f} W – Laden frei."))
+            actions.append(
+                Action(
+                    entity_id=wallbox_entity,
+                    service="switch.turn_on",
+                    data={},
+                    why="PV-Überschuss für die Wallbox.",
+                )
+            )
+        elif not want_on and feed <= settings.wallbox_off_w and wallbox_on is True:
+            steps.append(("info", f"Wallbox: Überschuss {feed:.0f} W ≤ {settings.wallbox_off_w:.0f} W – Laden aus."))
+            actions.append(
+                Action(entity_id=wallbox_entity, service="switch.turn_off", data={}, why="Kein Überschuss mehr.")
+            )
+        else:
+            steps.append(
+                (
+                    "info",
+                    f"Wallbox: Hysterese hält (Ein {settings.wallbox_on_w:.0f} W / "
+                    f"Aus {settings.wallbox_off_w:.0f} W).",
+                )
+            )
+
+    # --- Heizung-Modul (nur beratend, kein Schreiben) ---
+    if "heating" in modules and need and feed is not None and feed >= settings.feed_in_on_w:
+        steps.append(("info", f"Heizung: Vorheizen um {settings.heating_shift_c:.0f} °C möglich (nur Vorschlag)."))
+
+    # --- Prognose-Modul (nur beratend) ---
+    if "forecast" in modules:
+        steps.append(("info", f"Prognose: Horizont {settings.forecast_horizon_h:.0f} h (nur Anzeige)."))
 
     allowed, blocked_reasons = gate(actions, ctx)
     blocked = bool(blocked_reasons) or bool(actions and not allowed)

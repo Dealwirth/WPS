@@ -51,6 +51,12 @@ CONF_WW_HYGIENE_MIN_TEMP = "ww_hygiene_min_temp"
 CONF_SENSOR_MAX_AGE_S = "sensor_max_age_s"
 CONF_MAX_GRID_IMPORT_W = "max_grid_import_w"
 CONF_VERIFY_WRITES = "verify_writes"
+CONF_WW_HYSTERESIS_C = "ww_hysteresis_c"
+CONF_WALLBOX_ON_W = "wallbox_on_w"
+CONF_WALLBOX_OFF_W = "wallbox_off_w"
+CONF_WALLBOX_MIN_CHARGE_A = "wallbox_min_charge_a"
+CONF_HEATING_SHIFT_C = "heating_shift_c"
+CONF_FORECAST_HORIZON_H = "forecast_horizon_h"
 
 #: Modi
 MODE_OFF = "off"
@@ -69,6 +75,12 @@ DEFAULT_WW_MIN_TEMP = 45.0
 DEFAULT_WW_HYGIENE_MIN_TEMP = 50.0
 DEFAULT_SENSOR_MAX_AGE_S = 300.0
 DEFAULT_MAX_GRID_IMPORT_W = 11000.0
+DEFAULT_WW_HYSTERESIS_C = 2.0
+DEFAULT_WALLBOX_ON_W = 4200.0
+DEFAULT_WALLBOX_OFF_W = 2000.0
+DEFAULT_WALLBOX_MIN_CHARGE_A = 6.0
+DEFAULT_HEATING_SHIFT_C = 2.0
+DEFAULT_FORECAST_HORIZON_H = 24.0
 
 #: Gerätegrenzen (werden beim Setup gegen echte Attribute geprüft)
 HARD_WW_MIN_TEMP = 10.0

@@ -23,6 +23,7 @@ SPEC = ModuleSpec(
         "cancellable learning runs. The forecast only advises, it does not switch."
     ),
     category=ModuleCategory.INTELLIGENCE,
+    default_enabled=True,
     icon="mdi:chart-line",
     requires=("core",),
     provides=("forecast", "learning"),

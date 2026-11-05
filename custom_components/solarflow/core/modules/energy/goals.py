@@ -22,6 +22,7 @@ SPEC = ModuleSpec(
         "Shows self-consumption, autarky, CO₂ and savings in simple numbers. Display and reporting only, no switching."
     ),
     category=ModuleCategory.ENERGY,
+    default_enabled=True,
     icon="mdi:chart-donut",
     requires=("core",),
     provides=("self_consumption", "autarky", "co2", "savings"),

@@ -24,6 +24,7 @@ SPEC = ModuleSpec(
         "limits. Real hysteresis instead of cycling."
     ),
     category=ModuleCategory.DEVICES,
+    default_enabled=True,
     icon="mdi:heat-pump",
     requires=("core",),
     provides=("hot_water_boost", "heat_pump_plan"),

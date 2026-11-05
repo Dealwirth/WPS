@@ -20,6 +20,14 @@ AGE_ABS_MIN = 10.0
 AGE_ABS_MAX = 3600.0
 GRID_ABS_MIN = 1000.0
 GRID_ABS_MAX = 60000.0
+HYST_ABS_MIN = 0.0
+HYST_ABS_MAX = 15.0
+CURRENT_ABS_MIN = 6.0
+CURRENT_ABS_MAX = 32.0
+SHIFT_ABS_MIN = 0.0
+SHIFT_ABS_MAX = 10.0
+HORIZON_ABS_MIN = 1.0
+HORIZON_ABS_MAX = 72.0
 
 
 def clamp(value: float, lo: float, hi: float) -> float:
@@ -56,11 +64,21 @@ def validate_settings(s: Settings) -> tuple[Settings, list[str]]:
     s.min_pause_min = clamp(s.min_pause_min, TIME_ABS_MIN, TIME_ABS_MAX)
     s.sensor_max_age_s = clamp(s.sensor_max_age_s, AGE_ABS_MIN, AGE_ABS_MAX)
     s.max_grid_import_w = clamp(s.max_grid_import_w, GRID_ABS_MIN, GRID_ABS_MAX)
+    s.ww_hysteresis_c = clamp(s.ww_hysteresis_c, HYST_ABS_MIN, HYST_ABS_MAX)
+    s.wallbox_on_w = clamp(s.wallbox_on_w, FEED_IN_ABS_MIN, FEED_IN_ABS_MAX)
+    s.wallbox_off_w = clamp(s.wallbox_off_w, FEED_IN_ABS_MIN, FEED_IN_ABS_MAX)
+    s.wallbox_min_charge_a = clamp(s.wallbox_min_charge_a, CURRENT_ABS_MIN, CURRENT_ABS_MAX)
+    s.heating_shift_c = clamp(s.heating_shift_c, SHIFT_ABS_MIN, SHIFT_ABS_MAX)
+    s.forecast_horizon_h = clamp(s.forecast_horizon_h, HORIZON_ABS_MIN, HORIZON_ABS_MAX)
 
     # Hysterese: Aus muss unter Ein liegen, sonst taktet die Anlage.
     if s.feed_in_off_w >= s.feed_in_on_w:
         s.feed_in_off_w = max(FEED_IN_ABS_MIN, s.feed_in_on_w - 100.0)
         notes.append("Ausschaltschwelle lag über Einschaltschwelle – angepasst.")
+    # Wallbox-Hysterese ebenso.
+    if s.wallbox_off_w >= s.wallbox_on_w:
+        s.wallbox_off_w = max(FEED_IN_ABS_MIN, s.wallbox_on_w - 100.0)
+        notes.append("Wallbox-Ausschaltschwelle lag über Einschaltschwelle – angepasst.")
     # Boost muss über Normal liegen.
     if s.ww_boost_temp < s.ww_normal_temp:
         s.ww_boost_temp = s.ww_normal_temp

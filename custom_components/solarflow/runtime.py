@@ -19,8 +19,10 @@ from homeassistant.util import dt as dt_util
 from .const import (
     CONF_EV_ENTITY,
     CONF_FEED_IN_ENTITY,
+    CONF_FORECAST_HORIZON_H,
     CONF_GRID_IMPORT_ENTITY,
     CONF_HEATING_CLIMATE,
+    CONF_HEATING_SHIFT_C,
     CONF_MAX_GRID_IMPORT_W,
     CONF_MIN_PAUSE_MIN,
     CONF_MIN_RUNTIME_MIN,
@@ -29,8 +31,12 @@ from .const import (
     CONF_SENSOR_MAX_AGE_S,
     CONF_VERIFY_WRITES,
     CONF_WALLBOX_ENTITY,
+    CONF_WALLBOX_MIN_CHARGE_A,
+    CONF_WALLBOX_OFF_W,
+    CONF_WALLBOX_ON_W,
     CONF_WW_BOOST_TEMP,
     CONF_WW_HYGIENE_MIN_TEMP,
+    CONF_WW_HYSTERESIS_C,
     CONF_WW_HYSTERESIS_NUMBER,
     CONF_WW_MIN_TEMP,
     CONF_WW_NORMAL_TEMP,
@@ -40,12 +46,18 @@ from .const import (
     DEFAULT_AUDIT_LIMIT,
     DEFAULT_FEED_IN_OFF_W,
     DEFAULT_FEED_IN_ON_W,
+    DEFAULT_FORECAST_HORIZON_H,
+    DEFAULT_HEATING_SHIFT_C,
     DEFAULT_MAX_GRID_IMPORT_W,
     DEFAULT_MIN_PAUSE_MIN,
     DEFAULT_MIN_RUNTIME_MIN,
     DEFAULT_SENSOR_MAX_AGE_S,
+    DEFAULT_WALLBOX_MIN_CHARGE_A,
+    DEFAULT_WALLBOX_OFF_W,
+    DEFAULT_WALLBOX_ON_W,
     DEFAULT_WW_BOOST_TEMP,
     DEFAULT_WW_HYGIENE_MIN_TEMP,
+    DEFAULT_WW_HYSTERESIS_C,
     DEFAULT_WW_MIN_TEMP,
     DEFAULT_WW_NORMAL_TEMP,
     EVENT_ACTION,
@@ -80,6 +92,12 @@ class SolarFlowRuntime:
             ww_normal_temp=float(config.get(CONF_WW_NORMAL_TEMP, DEFAULT_WW_NORMAL_TEMP)),
             ww_min_temp=float(config.get(CONF_WW_MIN_TEMP, DEFAULT_WW_MIN_TEMP)),
             ww_hygiene_min_temp=float(config.get(CONF_WW_HYGIENE_MIN_TEMP, DEFAULT_WW_HYGIENE_MIN_TEMP)),
+            ww_hysteresis_c=float(config.get(CONF_WW_HYSTERESIS_C, DEFAULT_WW_HYSTERESIS_C)),
+            wallbox_on_w=float(config.get(CONF_WALLBOX_ON_W, DEFAULT_WALLBOX_ON_W)),
+            wallbox_off_w=float(config.get(CONF_WALLBOX_OFF_W, DEFAULT_WALLBOX_OFF_W)),
+            wallbox_min_charge_a=float(config.get(CONF_WALLBOX_MIN_CHARGE_A, DEFAULT_WALLBOX_MIN_CHARGE_A)),
+            heating_shift_c=float(config.get(CONF_HEATING_SHIFT_C, DEFAULT_HEATING_SHIFT_C)),
+            forecast_horizon_h=float(config.get(CONF_FORECAST_HORIZON_H, DEFAULT_FORECAST_HORIZON_H)),
             sensor_max_age_s=float(config.get(CONF_SENSOR_MAX_AGE_S, DEFAULT_SENSOR_MAX_AGE_S)),
             max_grid_import_w=float(config.get(CONF_MAX_GRID_IMPORT_W, DEFAULT_MAX_GRID_IMPORT_W)),
             verify_writes=bool(config.get(CONF_VERIFY_WRITES, True)),
@@ -204,6 +222,13 @@ class SolarFlowRuntime:
         dmin, dmax = self._device_bounds()
         current_temp = self._current_setpoint(ww_entity)
 
+        wallbox_entity = self.config.get(CONF_WALLBOX_ENTITY)
+        wallbox_on: bool | None = None
+        if wallbox_entity:
+            wb_state = self.hass.states.get(wallbox_entity)
+            if wb_state is not None:
+                wallbox_on = wb_state.state == "on"
+
         decision = evaluate(
             machine=self.machine,
             settings=self.settings,
@@ -217,6 +242,9 @@ class SolarFlowRuntime:
             ww_entity=ww_entity,
             emergency_stop=self.emergency_stop,
             current_temp=current_temp,
+            enabled_modules=self.enabled_modules,
+            wallbox_entity=wallbox_entity,
+            wallbox_on=wallbox_on,
         )
         self.previous_feed_in = feed_in.value if feed_in.is_number else self.previous_feed_in
         self.last_decision = decision

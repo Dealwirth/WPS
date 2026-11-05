@@ -35,18 +35,45 @@
           "ww_hygiene_min_temp": "Hygiene minimum temperature (°C)",
           "sensor_max_age_s": "Maximum data age (s)",
           "max_grid_import_w": "Maximum grid import (W)",
-          "verify_writes": "Read written values back"
+          "verify_writes": "Read written values back",
+          "ww_hysteresis_c": "DHW hysteresis (°C)",
+          "wallbox_on_w": "Wallbox charging on at (W)",
+          "wallbox_off_w": "Wallbox charging off below (W)",
+          "wallbox_min_charge_a": "Wallbox minimum current (A)",
+          "heating_shift_c": "Pre-heat heating curve (°C)",
+          "forecast_horizon_h": "Forecast horizon (h)"
         }
       }
     }
   },
   "services": {
-    "set_mode": { "name": "Set mode", "description": "Off, shadow or active." },
-    "set_settings": { "name": "Set settings", "description": "Change control values." },
-    "force_boost": { "name": "Force boost", "description": "Hold the hot-water boost manually." },
-    "cancel_boost": { "name": "Cancel boost", "description": "End the manual boost." },
-    "emergency_stop": { "name": "Emergency stop", "description": "Lock down all automation immediately." },
-    "reset_emergency_stop": { "name": "Clear emergency stop", "description": "Release the lock again." },
-    "run_cycle": { "name": "Run cycle", "description": "Compute a control cycle now." }
+    "set_mode": {
+      "name": "Set mode",
+      "description": "Off, shadow or active."
+    },
+    "set_settings": {
+      "name": "Set settings",
+      "description": "Change control values."
+    },
+    "force_boost": {
+      "name": "Force boost",
+      "description": "Hold the hot-water boost manually."
+    },
+    "cancel_boost": {
+      "name": "Cancel boost",
+      "description": "End the manual boost."
+    },
+    "emergency_stop": {
+      "name": "Emergency stop",
+      "description": "Lock down all automation immediately."
+    },
+    "reset_emergency_stop": {
+      "name": "Clear emergency stop",
+      "description": "Release the lock again."
+    },
+    "run_cycle": {
+      "name": "Run cycle",
+      "description": "Compute a control cycle now."
+    }
   }
 }

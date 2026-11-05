@@ -45,9 +45,25 @@ const T = {
     feedOff: "Aus bei (W)",
     boostTemp: "Boost-Temperatur (°C)",
     normalTemp: "Normaltemperatur (°C)",
+    minTemp: "Mindesttemperatur (°C)",
+    hygieneTemp: "Hygienetemperatur (°C)",
+    wwHyst: "Warmwasser-Hysterese (°C)",
     minRun: "Mindestlaufzeit (min)",
     minPause: "Mindestpause (min)",
     maxAge: "Max. Datenalter (s)",
+    maxGrid: "Max. Netzbezug (W)",
+    verify: "Schreibwerte prüfen",
+    grpBase: "Grundwerte",
+    grpWw: "Warmwasser",
+    grpWallbox: "Wallbox & Laden",
+    grpHeating: "Heizung",
+    grpForecast: "Prognose",
+    grpSafety: "Sicherheit",
+    wallboxOn: "Laden ein bei (W)",
+    wallboxOff: "Laden aus bei (W)",
+    wallboxMinA: "Mindeststrom (A)",
+    heatingShift: "Vorheizen (°C)",
+    forecastHorizon: "Horizont (h)",
     sources: "Quellen",
     changed: "Umschaltungen",
     loading: "SolarFlow lädt …",
@@ -87,9 +103,25 @@ const T = {
     feedOff: "Off at (W)",
     boostTemp: "Boost temperature (°C)",
     normalTemp: "Normal temperature (°C)",
+    minTemp: "Minimum temperature (°C)",
+    hygieneTemp: "Hygiene temperature (°C)",
+    wwHyst: "DHW hysteresis (°C)",
     minRun: "Minimum run (min)",
     minPause: "Minimum pause (min)",
     maxAge: "Max data age (s)",
+    maxGrid: "Max grid import (W)",
+    verify: "Verify writes",
+    grpBase: "Basics",
+    grpWw: "Hot water",
+    grpWallbox: "Wallbox & charging",
+    grpHeating: "Heating",
+    grpForecast: "Forecast",
+    grpSafety: "Safety",
+    wallboxOn: "Charging on at (W)",
+    wallboxOff: "Charging off at (W)",
+    wallboxMinA: "Minimum current (A)",
+    heatingShift: "Pre-heat (°C)",
+    forecastHorizon: "Horizon (h)",
     sources: "Sources",
     changed: "Switches",
     loading: "SolarFlow loading …",
@@ -179,6 +211,10 @@ const STYLE = `
   .srow { display: grid; grid-template-columns: 220px 1fr 70px; gap: 12px; align-items: center; margin: 8px 0; }
   .srow label { font-size: 13px; opacity: .85; }
   .srow output { text-align: right; font-variant-numeric: tabular-nums; opacity: .9; }
+  .sgroup { margin: 14px 0; padding: 14px 16px; border-radius: 16px; background: rgba(255,255,255,.035);
+    border: 1px solid rgba(255,255,255,.07); }
+  .sgroup h3 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; opacity: .65; }
+  .sgroup .srow:first-of-type { margin-top: 0; }
   input[type=range] { accent-color: var(--sf-amber); }
   .primary { margin-top: 16px; background: linear-gradient(135deg, var(--sf-teal), var(--sf-violet)); color: #fff; font-weight: 700; }
   .sources { display: grid; gap: 6px; }
@@ -291,6 +327,12 @@ class SolarFlowPanel extends HTMLElement {
     if (out) out.textContent = String(value);
   }
 
+  _flag(key, value) {
+    this._draft = { ...this._draft, [key]: Boolean(value) };
+    const out = this.shadowRoot.querySelector(`output[data-out="${key}"]`);
+    if (out) out.textContent = value ? "✓" : "–";
+  }
+
   _statusLabel(status) {
     if (status === "blocked") return this.t("blocked");
     if (status === "warn") return this.t("warn");
@@ -320,6 +362,9 @@ class SolarFlowPanel extends HTMLElement {
     const save = r.querySelector("[data-save]");
     if (save) save.addEventListener("click", () => this._saveSettings());
     r.querySelectorAll("input[data-range]").forEach((el) => el.addEventListener("input", () => this._num(el.dataset.range, el.value)));
+    r.querySelectorAll("input[data-check]").forEach((el) =>
+      el.addEventListener("change", () => this._flag(el.dataset.check, el.checked))
+    );
     r.querySelectorAll("input[data-module]").forEach((el) =>
       el.addEventListener("change", () => this._toggleModule(el.dataset.module, el.checked))
     );
@@ -425,17 +470,44 @@ class SolarFlowPanel extends HTMLElement {
       <label>${label}</label>
       <input type="range" data-range="${key}" min="${min}" max="${max}" step="${step}" value="${d[key]}"/>
       <output data-out="${key}">${d[key]}</output></div>`;
+    const check = (key, label) => `<div class="srow">
+      <label>${label}</label>
+      <label class="switch"><input type="checkbox" data-check="${key}" ${d[key] ? "checked" : ""}/><span></span></label>
+      <output data-out="${key}">${d[key] ? "✓" : "–"}</output></div>`;
+    const group = (title, body) => `<section class="sgroup"><h3>${title}</h3>${body}</section>`;
     const sources = Object.entries(s.sources || {})
       .map(([k, v]) => `<div class="src"><span>${esc(k)}</span><code>${esc(v || "–")}</code></div>`)
       .join("");
     return `<h2>${this.t("settings")}</h2>
-      ${row("feed_in_on_w", this.t("feedOn"), 0, 8000, 50)}
-      ${row("feed_in_off_w", this.t("feedOff"), 0, 8000, 50)}
-      ${row("ww_boost_temp", this.t("boostTemp"), 40, 60, 1)}
-      ${row("ww_normal_temp", this.t("normalTemp"), 35, 60, 1)}
-      ${row("min_runtime_min", this.t("minRun"), 0, 120, 1)}
-      ${row("min_pause_min", this.t("minPause"), 0, 120, 1)}
-      ${row("sensor_max_age_s", this.t("maxAge"), 30, 1800, 10)}
+      ${group(
+        this.t("grpBase"),
+        row("feed_in_on_w", this.t("feedOn"), 0, 8000, 50) +
+          row("feed_in_off_w", this.t("feedOff"), 0, 8000, 50) +
+          row("min_runtime_min", this.t("minRun"), 0, 120, 1) +
+          row("min_pause_min", this.t("minPause"), 0, 120, 1)
+      )}
+      ${group(
+        this.t("grpWw"),
+        row("ww_boost_temp", this.t("boostTemp"), 40, 60, 1) +
+          row("ww_normal_temp", this.t("normalTemp"), 35, 60, 1) +
+          row("ww_min_temp", this.t("minTemp"), 35, 60, 1) +
+          row("ww_hygiene_min_temp", this.t("hygieneTemp"), 35, 60, 1) +
+          row("ww_hysteresis_c", this.t("wwHyst"), 0, 10, 0.5)
+      )}
+      ${group(
+        this.t("grpWallbox"),
+        row("wallbox_on_w", this.t("wallboxOn"), 0, 11000, 100) +
+          row("wallbox_off_w", this.t("wallboxOff"), 0, 11000, 100) +
+          row("wallbox_min_charge_a", this.t("wallboxMinA"), 6, 32, 1)
+      )}
+      ${group(this.t("grpHeating"), row("heating_shift_c", this.t("heatingShift"), 0, 10, 0.5))}
+      ${group(this.t("grpForecast"), row("forecast_horizon_h", this.t("forecastHorizon"), 1, 72, 1))}
+      ${group(
+        this.t("grpSafety"),
+        row("sensor_max_age_s", this.t("maxAge"), 30, 1800, 10) +
+          row("max_grid_import_w", this.t("maxGrid"), 1000, 30000, 100) +
+          check("verify_writes", this.t("verify"))
+      )}
       <button class="primary" data-save>${this.t("save")}</button>
       <h2>${this.t("sources")}</h2><div class="sources">${sources}</div>`;
   }
