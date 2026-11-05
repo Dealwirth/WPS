@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOLARFLOW · Design-Vorschau</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Sora:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#060a11;
+  --bg-2:#0a1119;
+  --surface:rgba(16,24,36,.72);
+  --surface-solid:#0e1622;
+  --surface-2:#121c2a;
+  --line:rgba(140,170,210,.14);
+  --line-2:rgba(140,170,210,.08);
+  --text:#e9f1fb;
+  --muted:#8595a8;
+  --muted-2:#5c6b7e;
+  --solar:#ffb454;
+  --solar-2:#ff7a18;
+  --eco:#2fe6a8;
+  --eco-dim:rgba(47,230,168,.14);
+  --grid:#6aa9ff;
+  --alert:#ff5a78;
+  --violet:#a98bff;
+  --shadow:0 24px 60px -24px rgba(0,0,0,.8);
+  --r:18px;
+  --r-sm:12px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(1200px 700px at 12% -8%, rgba(255,122,24,.13), transparent 60%),
+    radial-gradient(1000px 600px at 100% 0%, rgba(47,230,168,.09), transparent 55%),
+    radial-gradient(900px 700px at 60% 110%, rgba(106,169,255,.08), transparent 60%),
+    var(--bg);
+  color:var(--text);
+  font-family:'Sora',system-ui,sans-serif;
+  font-weight:300;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  letter-spacing:.1px;
+}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:1;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+  opacity:.05;mix-blend-mode:overlay;
+}
+.mono{font-family:'JetBrains Mono',monospace}
+h1,h2,h3,h4{font-family:'Chakra Petch',sans-serif;font-weight:600;margin:0;letter-spacing:.4px}
+
+/* ---------- Shell ---------- */
+.shell{display:grid;grid-template-columns:236px 1fr;min-height:100vh;position:relative;z-index:2}
+@media(max-width:1000px){.shell{grid-template-columns:1fr}}
+
+/* ---------- Rail ---------- */
+.rail{
+  border-right:1px solid var(--line);padding:26px 20px;display:flex;flex-direction:column;gap:26px;
+  background:linear-gradient(180deg,rgba(10,17,25,.6),rgba(6,10,17,.2));
+  position:sticky;top:0;height:100vh;
+}
+@media(max-width:1000px){.rail{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;border-right:none;border-bottom:1px solid var(--line);padding:14px 18px}}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .mark{
+  width:38px;height:38px;border-radius:11px;display:grid;place-items:center;
+  background:conic-gradient(from 210deg,var(--solar),var(--solar-2),var(--eco),var(--grid),var(--solar));
+  box-shadow:0 0 0 1px rgba(255,255,255,.12),0 10px 30px -8px rgba(255,122,24,.6);
+  animation:spin 14s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.brand .mark span{width:16px;height:16px;border-radius:5px;background:var(--bg);display:block}
+.brand b{font-family:'Chakra Petch';font-size:19px;letter-spacing:2.5px;font-weight:700}
+.brand small{display:block;font-size:9.5px;letter-spacing:2px;color:var(--muted-2);text-transform:uppercase;margin-top:2px}
+.nav{display:flex;flex-direction:column;gap:4px}
+@media(max-width:1000px){.nav{flex-direction:row;flex-wrap:wrap}}
+.nav a{
+  display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:11px;color:var(--muted);
+  text-decoration:none;font-size:13.5px;font-weight:400;transition:.2s;border:1px solid transparent;
+}
+.nav a:hover{color:var(--text);background:rgba(255,255,255,.03)}
+.nav a.on{color:var(--text);background:linear-gradient(90deg,rgba(255,180,84,.14),transparent);border-color:var(--line)}
+.nav a .ic{width:17px;height:17px;flex:0 0 17px;opacity:.9}
+.rail .foot{margin-top:auto;font-size:10.5px;color:var(--muted-2);line-height:1.7}
+@media(max-width:1000px){.rail .foot{display:none}}
+
+/* ---------- Main ---------- */
+.main{padding:30px 34px 70px;max-width:1320px}
+@media(max-width:1000px){.main{padding:20px 16px 60px}}
+
+/* Top bar */
+.top{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:26px}
+.top h1{font-size:26px;font-weight:700}
+.top .sub{color:var(--muted);font-size:12.5px;margin-top:5px}
+.pills{display:flex;gap:9px;flex-wrap:wrap}
+.pill{
+  display:inline-flex;align-items:center;gap:8px;padding:8px 13px;border-radius:999px;
+  border:1px solid var(--line);background:var(--surface);font-size:11.5px;color:var(--muted);
+  font-family:'JetBrains Mono';letter-spacing:.3px;
+}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted-2)}
+.dot.live{background:var(--eco);box-shadow:0 0 0 0 rgba(47,230,168,.6);animation:pulse 2.2s infinite}
+.dot.shadow{background:var(--solar);box-shadow:0 0 0 0 rgba(255,180,84,.6);animation:pulse 2.2s infinite}
+.dot.off{background:var(--muted-2)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 currentColor}70%{box-shadow:0 0 0 9px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.pill.live{color:var(--eco);border-color:rgba(47,230,168,.3)}
+.pill.shadow{color:var(--solar);border-color:rgba(255,180,84,.35)}
+.pill.alert{color:var(--alert);border-color:rgba(255,90,120,.35)}
+
+/* Layout grid */
+.grid{display:grid;grid-template-columns:1.55fr 1fr;gap:20px}
+@media(max-width:1120px){.grid{grid-template-columns:1fr}}
+.card{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  backdrop-filter:blur(14px);box-shadow:var(--shadow);overflow:hidden;
+  animation:rise .7s cubic-bezier(.2,.7,.3,1) both;
+}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.card .hd{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line-2)}
+.card .hd h3{font-size:13.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--text);font-weight:600}
+.card .hd .tag{font-size:10px;letter-spacing:1.5px;color:var(--muted-2);text-transform:uppercase;font-family:'JetBrains Mono'}
+.card .bd{padding:20px}
+.stack{display:flex;flex-direction:column;gap:20px}
+
+/* Hero */
+.hero .bd{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center;padding:8px 8px 8px 24px}
+@media(max-width:760px){.hero .bd{grid-template-columns:1fr;padding:18px}}
+.hero .big{font-family:'Chakra Petch';font-size:66px;font-weight:700;line-height:.95;letter-spacing:-1px}
+.hero .big .u{font-size:22px;color:var(--muted);margin-left:6px;font-weight:500}
+.hero .lbl{color:var(--muted);font-size:12px;letter-spacing:1.6px;text-transform:uppercase;margin-bottom:12px;font-family:'JetBrains Mono'}
+.hero .flowline{display:flex;gap:22px;margin-top:20px;flex-wrap:wrap}
+.kpi{display:flex;flex-direction:column;gap:3px}
+.kpi .v{font-family:'JetBrains Mono';font-size:17px;font-weight:500}
+.kpi .k{font-size:10.5px;color:var(--muted-2);letter-spacing:1px;text-transform:uppercase}
+.hero .viz{padding:12px}
+.solar-badge{
+  display:inline-flex;align-items:center;gap:9px;padding:9px 14px;border-radius:12px;margin-bottom:16px;
+  background:linear-gradient(90deg,rgba(255,180,84,.16),rgba(255,122,24,.06));
+  border:1px solid rgba(255,180,84,.35);color:var(--solar);font-size:12px;font-family:'JetBrains Mono';
+}
+
+/* reason / why */
+.why .bd{padding:16px 20px}
+.why .step{display:flex;gap:12px;padding:11px 0;border-bottom:1px dashed var(--line-2);align-items:flex-start}
+.why .step:last-child{border-bottom:none}
+.why .step .n{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);min-width:22px;padding-top:2px}
+.why .step .t{font-size:13.5px;color:var(--text)}
+.why .step .t small{display:block;color:var(--muted);font-size:11.5px;margin-top:3px}
+.why .ok{color:var(--eco)}
+.why .warn{color:var(--solar)}
+.why .block{color:var(--alert)}
+
+/* controls */
+.ctl .row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 0;border-bottom:1px solid var(--line-2)}
+.ctl .row:last-child{border-bottom:none}
+.ctl .row .name{font-size:13.5px}
+.ctl .row .name small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:rgba(0,0,0,.25)}
+.seg button{background:none;border:none;color:var(--muted);font-family:'Chakra Petch';font-size:12px;letter-spacing:.6px;padding:8px 14px;cursor:pointer;transition:.18s}
+.seg button.on{background:linear-gradient(180deg,rgba(255,180,84,.22),rgba(255,122,24,.1));color:var(--solar)}
+.seg button:hover{color:var(--text)}
+.sw{width:50px;height:27px;border-radius:999px;border:1px solid var(--line);background:rgba(0,0,0,.3);position:relative;cursor:pointer;transition:.2s;flex:0 0 50px}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:var(--muted);transition:.2s}
+.sw.on{background:linear-gradient(90deg,rgba(47,230,168,.35),rgba(47,230,168,.15));border-color:rgba(47,230,168,.4)}
+.sw.on::after{left:26px;background:var(--eco)}
+.slider{display:flex;align-items:center;gap:12px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:150px;height:4px;border-radius:4px;background:linear-gradient(90deg,var(--solar) var(--p,50%),rgba(255,255,255,.12) var(--p,50%));outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 0 0 4px rgba(255,180,84,.25);cursor:pointer}
+.slider .num{font-family:'JetBrains Mono';font-size:13px;min-width:56px;text-align:right}
+
+/* devices */
+.devices{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(max-width:620px){.devices{grid-template-columns:1fr}}
+.dev{border:1px solid var(--line);border-radius:14px;padding:14px;background:rgba(255,255,255,.015);position:relative;overflow:hidden;transition:.2s}
+.dev:hover{border-color:rgba(140,170,210,.3);transform:translateY(-2px)}
+.dev .h{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.dev .h .ci{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:rgba(255,255,255,.05);font-size:14px}
+.dev .h b{font-family:'Chakra Petch';font-size:13.5px;font-weight:600;letter-spacing:.3px}
+.dev .h .st{margin-left:auto;font-size:9.5px;font-family:'JetBrains Mono';letter-spacing:1px;padding:4px 8px;border-radius:6px;text-transform:uppercase}
+.st.on{color:var(--eco);background:var(--eco-dim)}
+.st.wait{color:var(--solar);background:rgba(255,180,84,.13)}
+.st.off{color:var(--muted);background:rgba(255,255,255,.05)}
+.st.lock{color:var(--violet);background:rgba(169,139,255,.13)}
+.dev .vals{display:flex;gap:14px;flex-wrap:wrap}
+.dev .vals .kpi .v{font-size:14px}
+.dev .bar{height:4px;border-radius:4px;background:rgba(255,255,255,.08);margin-top:11px;overflow:hidden}
+.dev .bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--solar),var(--eco))}
+
+/* fallback layers */
+.layers{display:flex;flex-direction:column;gap:9px}
+.layer{display:flex;gap:13px;align-items:center;padding:12px 14px;border-radius:12px;border:1px solid var(--line-2);background:rgba(255,255,255,.014);transition:.2s}
+.layer:hover{background:rgba(255,255,255,.03);border-color:var(--line)}
+.layer .idx{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);min-width:26px}
+.layer .nm{font-size:13px;font-weight:400}
+.layer .nm small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+.layer .badge{margin-left:auto;font-size:9.5px;font-family:'JetBrains Mono';letter-spacing:.8px;padding:4px 8px;border-radius:6px;text-transform:uppercase;white-space:nowrap}
+.b-eco{color:var(--eco);background:var(--eco-dim)}
+.b-solar{color:var(--solar);background:rgba(255,180,84,.13)}
+.b-alert{color:var(--alert);background:rgba(255,90,120,.13)}
+.b-grid{color:var(--grid);background:rgba(106,169,255,.13)}
+
+/* log */
+.log{font-family:'JetBrains Mono';font-size:11.5px;line-height:1.9;max-height:270px;overflow:auto}
+.log .ln{display:flex;gap:12px;padding:3px 0;border-bottom:1px solid var(--line-2)}
+.log .t{color:var(--muted-2);flex:0 0 74px}
+.log .c{flex:0 0 58px;text-transform:uppercase;font-size:10px;letter-spacing:.6px;padding-top:1px}
+.log .m{color:var(--muted)}
+.log .c.info{color:var(--grid)}
+.log .c.eco{color:var(--eco)}
+.log .c.warn{color:var(--solar)}
+.log .c.err{color:var(--alert)}
+
+/* sections */
+.section{margin-top:34px}
+.section > h2{font-size:15px;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);margin-bottom:16px;display:flex;align-items:center;gap:14px}
+.section > h2::after{content:"";flex:1;height:1px;background:var(--line)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:14px}
+.tile{border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--surface);transition:.22s}
+.tile:hover{transform:translateY(-3px);border-color:rgba(140,170,210,.3)}
+.tile .ti{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;margin-bottom:12px;font-size:15px;background:rgba(255,255,255,.05)}
+.tile b{font-family:'Chakra Petch';font-size:14px;font-weight:600;display:block;margin-bottom:6px}
+.tile p{margin:0;font-size:12px;color:var(--muted);line-height:1.65}
+.tile .id{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:10px;display:block}
+
+.note{font-size:12px;color:var(--muted-2);margin-top:14px;line-height:1.7}
+.footer{margin-top:50px;padding-top:22px;border-top:1px solid var(--line-2);font-size:11px;color:var(--muted-2);line-height:1.9}
+.footer b{color:var(--muted)}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:rgba(140,170,210,.2);border-radius:9px}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- RAIL -->
+  <aside class="rail">
+    <div class="brand">
+      <div class="mark"><span></span></div>
+      <div><b>SOLARFLOW</b><small>Energy Control</small></div>
+    </div>
+    <nav class="nav">
+      <a class="on" href="#"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Übersicht</a>
+      <a href="#"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg>Steuerung</a>
+      <a href="#"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v18M5 8h14M5 16h14"/></svg>Geräte</a>
+      <a href="#"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3 3 7v6c0 5 4 7 9 8 5-1 9-3 9-8V7l-9-4Z"/></svg>Schutz</a>
+      <a href="#"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Protokoll</a>
+      <a href="#"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>Einstellungen</a>
+    </nav>
+    <div class="foot">
+      <div>v0.1.0 · Design-Vorschau</div>
+      <div>Kein Live-Zugriff · reine Simulation</div>
+      <div style="margin-top:8px;color:var(--muted-2)">Offline-Prototyp</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <div class="top">
+      <div>
+        <h1>Übersicht</h1>
+        <div class="sub">Vitocal 16 · Wattpilot · Ioniq 5 · PV 8,2 kWp — Donnerstag, 4. Nov · 18:47</div>
+      </div>
+      <div class="pills">
+        <span class="pill shadow"><span class="dot shadow"></span>SCHATTEN-MODUS</span>
+        <span class="pill live"><span class="dot live"></span>HA VERBUNDEN</span>
+        <span class="pill"><span class="dot off"></span>NOT-AUS BEREIT</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- LEFT -->
+      <div class="stack">
+
+        <!-- HERO -->
+        <div class="card hero">
+          <div class="hd"><h3>Live-Energiefluss</h3><span class="tag">aktualisiert gerade</span></div>
+          <div class="bd">
+            <div>
+              <div class="solar-badge">☀ PV-ÜBERSCHUSS ERKANNT</div>
+              <div class="lbl">Einspeisung ins Netz</div>
+              <div class="big"><span id="feed">1.840</span><span class="u">W</span></div>
+              <div class="flowline">
+                <div class="kpi"><span class="v mono" id="pv">3.120 W</span><span class="k">PV-Leistung</span></div>
+                <div class="kpi"><span class="v mono" id="load">1.280 W</span><span class="k">Hausverbrauch</span></div>
+                <div class="kpi"><span class="v mono" id="gridimp">0 W</span><span class="k">Netzbezug</span></div>
+              </div>
+            </div>
+            <div class="viz">
+              <svg viewBox="0 0 340 200" width="100%" height="200" role="img" aria-label="Energiefluss">
+                <defs>
+                  <linearGradient id="gs" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb454"/><stop offset="1" stop-color="#ff7a18"/></linearGradient>
+                  <linearGradient id="ge" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2fe6a8"/><stop offset="1" stop-color="#6aa9ff"/></linearGradient>
+                  <filter id="glow"><feGaussianBlur stdDeviation="3.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                </defs>
+                <!-- sun -->
+                <circle cx="46" cy="42" r="17" fill="url(#gs)" filter="url(#glow)"/>
+                <circle cx="46" cy="42" r="27" fill="none" stroke="rgba(255,180,84,.35)" stroke-dasharray="3 5">
+                  <animateTransform attributeName="transform" type="rotate" from="0 46 42" to="360 46 42" dur="22s" repeatCount="indefinite"/>
+                </circle>
+                <text x="46" y="80" fill="#8595a8" font-family="JetBrains Mono" font-size="9" text-anchor="middle">PV 8,2 kWp</text>
+                <!-- house -->
+                <rect x="150" y="70" width="60" height="52" rx="6" fill="rgba(106,169,255,.09)" stroke="rgba(106,169,255,.4)"/>
+                <path d="M144 72 L180 46 L216 72" fill="none" stroke="rgba(106,169,255,.55)" stroke-width="2"/>
+                <text x="180" y="101" fill="#e9f1fb" font-family="Chakra Petch" font-size="10" text-anchor="middle">HAUS</text>
+                <text x="180" y="140" fill="#8595a8" font-family="JetBrains Mono" font-size="9" text-anchor="middle">1.280 W</text>
+                <!-- heat pump -->
+                <circle cx="290" cy="150" r="20" fill="rgba(47,230,168,.09)" stroke="rgba(47,230,168,.45)"/>
+                <text x="290" y="154" font-size="15" text-anchor="middle">♨</text>
+                <text x="290" y="186" fill="#2fe6a8" font-family="JetBrains Mono" font-size="8.5" text-anchor="middle">WP BOOST</text>
+                <!-- lines -->
+                <path d="M64 42 C110 42 120 88 150 92" fill="none" stroke="url(#gs)" stroke-width="2.6" stroke-dasharray="7 6" filter="url(#glow)">
+                  <animate attributeName="stroke-dashoffset" from="26" to="0" dur="1.1s" repeatCount="indefinite"/>
+                </path>
+                <path d="M210 96 C250 100 258 132 274 141" fill="none" stroke="url(#ge)" stroke-width="2.6" stroke-dasharray="7 6" filter="url(#glow)">
+                  <animate attributeName="stroke-dashoffset" from="26" to="0" dur="1.3s" repeatCount="indefinite"/>
+                </path>
+                <!-- grid -->
+                <rect x="20" y="150" width="52" height="34" rx="6" fill="rgba(255,255,255,.03)" stroke="rgba(140,170,210,.25)"/>
+                <text x="46" y="171" fill="#8595a8" font-family="JetBrains Mono" font-size="9" text-anchor="middle">NETZ</text>
+                <path d="M46 150 C46 130 120 118 150 110" fill="none" stroke="rgba(140,170,210,.35)" stroke-width="2" stroke-dasharray="5 6"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- WHY -->
+        <div class="card why">
+          <div class="hd"><h3>Warum gerade so?</h3><span class="tag">Entscheidungskette</span></div>
+          <div class="bd">
+            <div class="step"><span class="n">01</span><span class="t">Rohdaten gelesen <small>Einspeisung 1.840 W · gültig · Alter 4 s</small></span></div>
+            <div class="step"><span class="n">02</span><span class="t">Datenqualität <span class="ok">OK</span> <small>Sensor frisch, plausibel, kein Sprung</small></span></div>
+            <div class="step"><span class="n">03</span><span class="t">Bedarf geprüft <span class="warn">Warmwasser 51,6 °C &lt; 60 °C</span> <small>Speicher kann Überschuss aufnehmen</small></span></div>
+            <div class="step"><span class="n">04</span><span class="t">Grenzen <span class="ok">eingehalten</span> <small>Boost 60 °C ≤ Max 60 °C · Ein 1.800 W erreicht</small></span></div>
+            <div class="step"><span class="n">05</span><span class="t">Flankenschutz <span class="ok">frei</span> <small>Mindestpause 10 min abgelaufen</small></span></div>
+            <div class="step"><span class="n">06</span><span class="t">Ausführung: <b style="color:var(--solar)">Schatten-Modus</b> <small>Vorschlag: WW-Soll 52 → 60 °C. Es wird noch nichts geschaltet.</small></span></div>
+          </div>
+        </div>
+
+        <!-- DEVICES -->
+        <div class="card">
+          <div class="hd"><h3>Steuerbare Geräte</h3><span class="tag">automatisch erkannt</span></div>
+          <div class="bd">
+            <div class="devices">
+              <div class="dev">
+                <div class="h"><div class="ci">♨</div><b>Vitocal 16 · Warmwasser</b><span class="st wait">Bereit</span></div>
+                <div class="vals">
+                  <div class="kpi"><span class="v mono">51,6 °C</span><span class="k">Ist</span></div>
+                  <div class="kpi"><span class="v mono">52 °C</span><span class="k">Soll</span></div>
+                  <div class="kpi"><span class="v mono">60 °C</span><span class="k">Boost</span></div>
+                </div>
+                <div class="bar"><i style="width:62%"></i></div>
+              </div>
+              <div class="dev">
+                <div class="h"><div class="ci">🔌</div><b>Wattpilot Wallbox</b><span class="st on">Lädt</span></div>
+                <div class="vals">
+                  <div class="kpi"><span class="v mono">10,8 kW</span><span class="k">Leistung</span></div>
+                  <div class="kpi"><span class="v mono">PV-Modus</span><span class="k">Regel</span></div>
+                </div>
+                <div class="bar"><i style="width:78%"></i></div>
+              </div>
+              <div class="dev">
+                <div class="h"><div class="ci">🚗</div><b>Ioniq 5</b><span class="st on">80 %</span></div>
+                <div class="vals">
+                  <div class="kpi"><span class="v mono">80 %</span><span class="k">Akku</span></div>
+                  <div class="kpi"><span class="v mono">100 %</span><span class="k">Ziel</span></div>
+                </div>
+                <div class="bar"><i style="width:80%"></i></div>
+              </div>
+              <div class="dev">
+                <div class="h"><div class="ci">🌡</div><b>Vitocal 16 · Heizung</b><span class="st lock">Nur lesen</span></div>
+                <div class="vals">
+                  <div class="kpi"><span class="v mono">33,8 °C</span><span class="k">Vorlauf</span></div>
+                  <div class="kpi"><span class="v mono">7,5 °C</span><span class="k">Außen</span></div>
+                </div>
+                <div class="bar"><i style="width:41%"></i></div>
+              </div>
+            </div>
+            <div class="note">Erkennung läuft über Domäne, <span class="mono">device_class</span> und Entitätsnamen. Jedes Gerät startet im Schatten-Modus und muss einmal ausdrücklich freigegeben werden.</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT -->
+      <div class="stack">
+
+        <!-- CONTROL -->
+        <div class="card ctl">
+          <div class="hd"><h3>Steuerung</h3><span class="tag">sicher &amp; schlicht</span></div>
+          <div class="bd">
+            <div class="row">
+              <div class="name">Betriebsart<small>Was darf das System tun?</small></div>
+              <div class="seg" id="modeseg">
+                <button data-m="shadow" class="on">Schatten</button>
+                <button data-m="active">Aktiv</button>
+                <button data-m="off">Aus</button>
+              </div>
+            </div>
+            <div class="row">
+              <div class="name">Boost erzwingen<small>Warmwasser jetzt auf 60 °C</small></div>
+              <div class="sw" id="sw-boost"></div>
+            </div>
+            <div class="row">
+              <div class="name">Urlaubsmodus<small>Keine Automatik, nur Schutz</small></div>
+              <div class="sw" id="sw-holiday"></div>
+            </div>
+            <div class="row">
+              <div class="name">Benachrichtigung<small>Nur bei Moduswechsel</small></div>
+              <div class="sw on" id="sw-notify"></div>
+            </div>
+            <div class="row">
+              <div class="name">Einschaltschwelle<small>Überschuss zum Starten</small></div>
+              <div class="slider"><input type="range" min="500" max="4000" step="50" value="1800" id="sl-in"><span class="num mono" id="sl-in-v">1800 W</span></div>
+            </div>
+            <div class="row">
+              <div class="name">Ausschaltschwelle<small>Hysterese gegen Taktung</small></div>
+              <div class="slider"><input type="range" min="0" max="3000" step="50" value="900" id="sl-out"><span class="num mono" id="sl-out-v">900 W</span></div>
+            </div>
+            <div class="row">
+              <div class="name">Boost-Temperatur<small>WW-Soll bei Überschuss</small></div>
+              <div class="slider"><input type="range" min="45" max="60" step="1" value="60" id="sl-temp"><span class="num mono" id="sl-temp-v">60 °C</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FALLBACKS -->
+        <div class="card">
+          <div class="hd"><h3>10 Schutz-Ebenen</h3><span class="tag">Fail-safe</span></div>
+          <div class="bd">
+            <div class="layers" id="layers"></div>
+            <div class="note">Fällt eine Ebene aus, greift die nächste. Im Zweifel wird <b>nicht</b> geschaltet – der sichere Zustand ist immer „Normal" (52 °C).</div>
+          </div>
+        </div>
+
+        <!-- LOG -->
+        <div class="card">
+          <div class="hd"><h3>Protokoll</h3><span class="tag">redigiert</span></div>
+          <div class="bd">
+            <div class="log" id="log">
+              <div class="ln"><span class="t">18:47:02</span><span class="c info">info</span><span class="m">Verbindung zu Home Assistant steht (lokal).</span></div>
+              <div class="ln"><span class="t">18:47:03</span><span class="c info">info</span><span class="m">4 Geräte erkannt, 0 freigegeben.</span></div>
+              <div class="ln"><span class="t">18:47:05</span><span class="c warn">warn</span><span class="m">Boost vorgeschlagen, Schatten-Modus aktiv → nicht geschaltet.</span></div>
+              <div class="ln"><span class="t">18:47:10</span><span class="c eco">ok</span><span class="m">Datenqualität geprüft: Einspeise-Sensor frisch (4 s).</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- MODULES -->
+    <div class="section">
+      <h2>Module im internen Store</h2>
+      <div class="tiles">
+        <div class="tile"><div class="ti">⚡</div><b>Kern &amp; Bilanz</b><p>Energiebilanz, Geräteerkennung, Grenzen, Datenqualität, Protokoll. Immer aktiv.</p><span class="id">core · pflicht</span></div>
+        <div class="tile"><div class="ti">♨</div><b>Thermische Flexibilität</b><p>Wärmepumpe &amp; Warmwasser im Überschussfenster. Wohlfühl- und Hygienegrenzen bleiben hart.</p><span class="id">thermal · devices</span></div>
+        <div class="tile"><div class="ti">🔌</div><b>Wallbox &amp; Laden</b><p>Wattpilot/Ioniq PV-Überschussladen mit Phasenlogik, Mindestladedauer und Ziel-SOC.</p><span class="id">wallbox · devices</span></div>
+        <div class="tile"><div class="ti">🌡</div><b>Heizung &amp; Puffer</b><p>Heizkurven-Verschiebung, Pufferladung, Heizstab – nur wenn es der Komfort zulässt.</p><span class="id">heating · devices</span></div>
+        <div class="tile"><div class="ti">🕒</div><b>Tarif-Fenster</b><p>Günstige Stunden (Einspeisetarif 12 ct / Bezug 28 ct) markieren und einplanen.</p><span class="id">tariff · energy</span></div>
+        <div class="tile"><div class="ti">📈</div><b>Prognose &amp; Lernen</b><p>Verbrauchs- und Solarprognose mit Vertrauenswert; begrenzte, abbrechbare Lernläufe.</p><span class="id">forecast · intelligence</span></div>
+        <div class="tile"><div class="ti">🧺</div><b>Flexible Lasten</b><p>Waschmaschine, Trockner, Geschirrspüler, Pumpen – zeitlich in die Sonne schieben.</p><span class="id">loads · devices</span></div>
+        <div class="tile"><div class="ti">🛡</div><b>Sicherheitsterminal</b><p>Dauerüberwachung, Not-Aus, Selbstheilung, Ereignisprotokoll.</p><span class="id">safety · safety</span></div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <b>SOLARFLOW</b> — Design-Vorschau für den WPS-Prototyp. Alle Zahlen sind simuliert.<br>
+      Erstellt von einem KI-Agenten (OpenHands) im Auftrag von Dealwirth · noch nicht veröffentlicht.
+    </div>
+
+  </main>
+</div>
+
+<script>
+// --- Fallback layers (10) ---
+const LAYERS = [
+  ["Sensor-Plausibilität","Wertebereich, Sprung und Einheit werden geprüft.","Wächter","b-grid"],
+  ["Daten-Alter","Veraltete Werte (&gt; 5 min) gelten als ungültig.","Wächter","b-grid"],
+  ["Sensor-Ausfall","Unbekannt/Nicht verfügbar → sicherer Modus „Normal“.","Fällt zurück","b-eco"],
+  ["Hysterese &amp; Flankenschutz","Ein/Aus getrennt, Mindestlauf- und Mindestpause.","Gegen Taktung","b-solar"],
+  ["Harte Temperatur-Grenzen","Nie über 60 °C, nie unter Wohlfühl-/Hygienegrenze.","Begrenzt","b-alert"],
+  ["Gerätegrenzen","Schreibwerte werden auf die echten min/max geklemmt.","Begrenzt","b-alert"],
+  ["Schreib-Verifikation","Nach dem Setzen wird der neue Wert zurückgelesen.","Prüft","b-grid"],
+  ["Wiederhol- &amp; Not-Fallback","Fehlschlag → kein Dauerfeuer, zurück auf Normal.","Fällt zurück","b-eco"],
+  ["Selbstheilung","Alter guter Zustand wird wiederhergestellt.","Heilt","b-eco"],
+  ["Not-Aus &amp; Watchdog","Manueller Stopp und Zeitwächter über allem.","Letzte Instanz","b-alert"],
+];
+const box = document.getElementById('layers');
+LAYERS.forEach((l,i)=>{
+  const d = document.createElement('div');
+  d.className='layer';
+  d.innerHTML = `<span class="idx mono">${String(i+1).padStart(2,'0')}</span>
+    <span class="nm">${l[0]}<small>${l[1]}</small></span>
+    <span class="badge ${l[3]}">${l[2]}</span>`;
+  box.appendChild(d);
+});
+
+// --- Mode switch ---
+document.querySelectorAll('#modeseg button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('#modeseg button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    const m = b.dataset.m;
+    addLog(m==='off'?'err':(m==='active'?'eco':'warn'),
+      m==='active' ? 'Betriebsart „Aktiv": Automatik scharf. Grenzen bleiben aktiv.'
+      : m==='shadow' ? 'Betriebsart „Schatten": nur beobachten und vorschlagen.'
+      : 'Betriebsart „Aus": keine Automatik, nur Schutz und Anzeige.');
+  });
+});
+
+// --- Toggles ---
+document.querySelectorAll('.sw').forEach(s=>s.addEventListener('click',()=>s.classList.toggle('on')));
+
+// --- Sliders ---
+function bindSlider(id, fmt){
+  const el=document.getElementById(id), out=document.getElementById(id+'-v');
+  const upd=()=>{ out.textContent=fmt(el.value); el.style.setProperty('--p',((el.value-el.min)/(el.max-el.min)*100)+'%'); };
+  el.addEventListener('input',upd); upd();
+}
+bindSlider('sl-in', v=>v+' W');
+bindSlider('sl-out', v=>v+' W');
+bindSlider('sl-temp', v=>v+' °C');
+
+// --- Log helper ---
+function addLog(cls,msg){
+  const now=new Date();
+  const t=[now.getHours(),now.getMinutes(),now.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
+  const el=document.getElementById('log');
+  const d=document.createElement('div');
+  d.className='ln';
+  d.innerHTML=`<span class="t">${t}</span><span class="c ${cls}">${cls}</span><span class="m">${msg}</span>`;
+  el.prepend(d);
+  while(el.children.length>9) el.removeChild(el.lastChild);
+}
+
+// --- Fake live data ---
+let feed=1840;
+setInterval(()=>{
+  feed = Math.max(300, Math.min(3200, feed + (Math.random()*420-190)));
+  document.getElementById('feed').textContent = feed.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  const pv = feed + 1280;
+  document.getElementById('pv').textContent = pv.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')+' W';
+}, 1600);
+
+// log ticker
+const TICKS=[
+  ['info','Zyklus: Einspeisung gelesen, Entscheidungskette ausgeführt.'],
+  ['eco','Datenqualität OK, Grenzen eingehalten.'],
+  ['warn','Boost vorgeschlagen, Schatten-Modus aktiv → nicht geschaltet.'],
+  ['info','Bedarf: Warmwasser 51,6 °C &lt; 60 °C, Speicher aufnahmefähig.'],
+  ['eco','Flankenschutz frei, Mindestpause abgelaufen.'],
+];
+let ti=0;
+setInterval(()=>{ addLog(TICKS[ti][0],TICKS[ti][1]); ti=(ti+1)%TICKS.length; }, 3400);
+</script>
+</body>
+</html>

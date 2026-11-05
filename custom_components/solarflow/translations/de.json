@@ -1,0 +1,52 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "SolarFlow einrichten",
+        "description": "Wähle die Messpunkte und Geräte. SolarFlow startet immer im Modus „Schatten“ und schaltet erst, wenn du die Automatik ausdrücklich scharf stellst.",
+        "data": {
+          "feed_in_entity": "Einspeisung ins Netz (Leistung)",
+          "pv_entity": "PV-Leistung",
+          "grid_import_entity": "Netzbezug (Leistung)",
+          "ww_water_heater": "Warmwasser-Kreis",
+          "ww_temp_number": "WW-Solltemperatur (Zahl)",
+          "ww_storage_sensor": "WW-Speichertemperatur",
+          "ww_hysteresis_number": "WW-Hysterese (Zahl)",
+          "heating_climate": "Heizung",
+          "wallbox_entity": "Wallbox",
+          "ev_entity": "Fahrzeug"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "SolarFlow-Einstellungen",
+        "data": {
+          "mode": "Betriebsart",
+          "feed_in_on_w": "Einschalten ab Einspeisung (W)",
+          "feed_in_off_w": "Ausschalten unter Einspeisung (W)",
+          "min_runtime_min": "Mindestlaufzeit (min)",
+          "min_pause_min": "Mindestpause (min)",
+          "ww_boost_temp": "Boost-Temperatur (°C)",
+          "ww_normal_temp": "Normaltemperatur (°C)",
+          "ww_min_temp": "Mindesttemperatur (°C)",
+          "ww_hygiene_min_temp": "Hygiene-Mindesttemperatur (°C)",
+          "sensor_max_age_s": "Maximales Datenalter (s)",
+          "max_grid_import_w": "Maximaler Netzbezug (W)",
+          "verify_writes": "Schreibwerte zurücklesen"
+        }
+      }
+    }
+  },
+  "services": {
+    "set_mode": { "name": "Betriebsart setzen", "description": "Aus, Schatten oder Aktiv." },
+    "set_settings": { "name": "Einstellungen setzen", "description": "Regelwerte ändern." },
+    "force_boost": { "name": "Boost erzwingen", "description": "Warmwasser-Boost manuell halten." },
+    "cancel_boost": { "name": "Boost aufheben", "description": "Manuellen Boost beenden." },
+    "emergency_stop": { "name": "Not-Aus", "description": "Alle Automatik sofort sperren." },
+    "reset_emergency_stop": { "name": "Not-Aus aufheben", "description": "Sperre wieder freigeben." },
+    "run_cycle": { "name": "Zyklus ausführen", "description": "Regelzyklus sofort berechnen." }
+  }
+}

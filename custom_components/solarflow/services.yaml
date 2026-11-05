@@ -1,0 +1,85 @@
+set_mode:
+  name: Betriebsart setzen
+  description: Aus, Schatten oder Aktiv.
+  fields:
+    mode:
+      name: Betriebsart
+      required: true
+      selector:
+        select:
+          options:
+            - value: "off"
+              label: "Aus"
+            - value: "shadow"
+              label: "Schatten"
+            - value: "active"
+              label: "Aktiv"
+
+set_settings:
+  name: Einstellungen setzen
+  description: Regelwerte ändern.
+  fields:
+    feed_in_on_w:
+      name: Einschalten ab Einspeisung (W)
+      selector:
+        number: { min: 0, max: 20000, step: 50, unit_of_measurement: "W", mode: box }
+    feed_in_off_w:
+      name: Ausschalten unter Einspeisung (W)
+      selector:
+        number: { min: 0, max: 20000, step: 50, unit_of_measurement: "W", mode: box }
+    min_runtime_min:
+      name: Mindestlaufzeit (min)
+      selector:
+        number: { min: 0, max: 720, step: 1, unit_of_measurement: "min", mode: box }
+    min_pause_min:
+      name: Mindestpause (min)
+      selector:
+        number: { min: 0, max: 720, step: 1, unit_of_measurement: "min", mode: box }
+    ww_boost_temp:
+      name: Boost-Temperatur (°C)
+      selector:
+        number: { min: 10, max: 60, step: 1, unit_of_measurement: "°C", mode: box }
+    ww_normal_temp:
+      name: Normaltemperatur (°C)
+      selector:
+        number: { min: 10, max: 60, step: 1, unit_of_measurement: "°C", mode: box }
+    ww_min_temp:
+      name: Mindesttemperatur (°C)
+      selector:
+        number: { min: 10, max: 60, step: 1, unit_of_measurement: "°C", mode: box }
+    ww_hygiene_min_temp:
+      name: Hygiene-Mindesttemperatur (°C)
+      selector:
+        number: { min: 10, max: 60, step: 1, unit_of_measurement: "°C", mode: box }
+    sensor_max_age_s:
+      name: Maximales Datenalter (s)
+      selector:
+        number: { min: 10, max: 3600, step: 10, unit_of_measurement: "s", mode: box }
+    max_grid_import_w:
+      name: Maximaler Netzbezug (W)
+      selector:
+        number: { min: 1000, max: 60000, step: 100, unit_of_measurement: "W", mode: box }
+    verify_writes:
+      name: Schreibwerte zurücklesen
+      selector:
+        boolean:
+
+force_boost:
+  name: Boost erzwingen
+  description: Warmwasser-Boost manuell halten.
+
+cancel_boost:
+  name: Boost aufheben
+  description: Manuellen Boost beenden.
+
+emergency_stop:
+  name: Not-Aus
+  description: Alle Automatik sofort sperren.
+
+reset_emergency_stop:
+  name: Not-Aus aufheben
+  description: Sperre wieder freigeben.
+
+run_cycle:
+  name: Zyklus ausführen
+  description: Regelzyklus sofort berechnen.

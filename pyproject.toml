@@ -1,0 +1,32 @@
+[project]
+name = "solarflow"
+version = "0.1.0"
+description = "SolarFlow – sichere PV-Automatik für Wärmepumpe, Warmwasser und Laden in Home Assistant"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "C4", "SIM", "RUF"]
+ignore = [
+    "RUF012",          # mutable class attrs - HA nutzt das bewusst
+    "RUF001",          # deutsche Texte nutzen bewusst Gedankenstriche
+    "RUF002",
+    "RUF003",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Die Laufzeit und die HA-Schicht fangen bewusst breit ab: ein Fehler in einem
+# Zyklus darf die Integration nie anhalten (Fail-safe by design).
+"custom_components/solarflow/runtime.py" = ["BLE001"]
+"custom_components/solarflow/panel.py" = ["BLE001", "S110", "SIM105"]
+"custom_components/solarflow/__init__.py" = ["BLE001"]
+# Tests setzen sys.path bewusst vor dem Import des HA-freien Kerns.
+"tests/*" = ["RUF059", "E402"]
