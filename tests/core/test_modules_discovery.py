@@ -6,7 +6,7 @@ import sys
 import unittest
 from pathlib import Path
 
-CORE_PARENT = Path(__file__).resolve().parents[2] / "custom_components" / "solarflow"
+CORE_PARENT = Path(__file__).resolve().parents[2] / "solarflow" / "app"
 sys.path.insert(0, str(CORE_PARENT))
 
 from core.discovery import EntityInfo, suggest

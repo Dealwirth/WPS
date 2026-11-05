@@ -13,7 +13,7 @@ from pathlib import Path
 # Den HA-freien Kern direkt importierbar machen: wir laden das Paket "core"
 # aus dem Integrationsordner, ohne das (HA-abhängige) __init__.py der
 # Integration auszuführen. So bleibt der Kern ohne Home Assistant testbar.
-CORE_PARENT = Path(__file__).resolve().parents[2] / "custom_components" / "solarflow"
+CORE_PARENT = Path(__file__).resolve().parents[2] / "solarflow" / "app"
 sys.path.insert(0, str(CORE_PARENT))
 
 from core.limits import clamp, validate_setpoint, validate_settings

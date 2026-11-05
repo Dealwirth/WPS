@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>SolarFlow</title>
+<style>
+  :root{
+    --amber:#ffb020; --coral:#ff6b4a; --violet:#7b5cff; --teal:#12c6a5; --sky:#3aa0ff;
+    --ink:#eef1ff; --muted:rgba(238,241,255,.62); --card:rgba(255,255,255,.055);
+    --line:rgba(255,255,255,.10); --ok:#12c6a5; --warn:#ffb020; --err:#ff5d5d;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;min-height:100%}
+  body{
+    color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:radial-gradient(1200px 620px at 12% -10%,#222a63 0%,#0d1236 45%,#070a1c 100%);
+    background-attachment:fixed; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:18px 16px 64px}
+  header{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:14px}
+  .logo{font-size:28px;width:54px;height:54px;border-radius:18px;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--amber),var(--coral));box-shadow:0 10px 30px rgba(255,140,60,.35)}
+  h1{margin:0;font-size:25px;letter-spacing:.4px}
+  .sub{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
+  .hact{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  button{cursor:pointer;border:none;border-radius:12px;font:inherit;padding:10px 15px;color:var(--ink);
+    background:var(--card);transition:transform .08s ease,filter .2s}
+  button:hover{filter:brightness(1.12)} button:active{transform:scale(.97)}
+  .ghost{background:rgba(255,255,255,.08)}
+  .danger{background:linear-gradient(135deg,#ff5d5d,#c22);font-weight:700}
+  .danger.pulse{animation:pulse 1.2s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,80,80,.6)}50%{box-shadow:0 0 0 12px rgba(255,80,80,0)}}
+  .conn{font-size:12px;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.08)}
+  .conn.on{background:rgba(18,198,165,.2);color:#6ef2d6}
+  .conn.off{background:rgba(255,93,93,.2);color:#ffb3ab}
+
+  .hero{margin-top:20px;display:grid;grid-template-columns:290px 1fr;gap:20px;
+    background:linear-gradient(135deg,rgba(255,176,32,.10),rgba(123,92,255,.13));
+    border:1px solid var(--line);border-radius:24px;padding:20px}
+  .gauge{position:relative}
+  .gauge svg{width:100%;display:block}
+  .track{fill:none;stroke:rgba(255,255,255,.12);stroke-width:14;stroke-linecap:round}
+  .fill{fill:none;stroke:var(--amber);stroke-width:14;stroke-linecap:round;transition:stroke-dashoffset .6s ease}
+  .gval{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .gval strong{font-size:40px;line-height:1} .gval span{font-size:13px;color:var(--muted)}
+  .gval em{font-style:normal;font-size:11.5px;color:var(--muted);margin-top:4px}
+  .hinfo{display:flex;flex-direction:column;gap:11px}
+  .chip{align-self:flex-start;padding:6px 14px;border-radius:999px;font-weight:700;font-size:13.5px}
+  .chip.normal{background:rgba(18,198,165,.2);color:#6ef2d6}
+  .chip.boost{background:rgba(255,176,32,.22);color:#ffd27a}
+  .row{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dashed var(--line);padding-bottom:6px;font-size:13.5px}
+  .row span{color:var(--muted)}
+  .why{font-size:13px;background:rgba(255,255,255,.05);padding:9px 11px;border-radius:10px;line-height:1.35}
+  .modes{display:flex;gap:9px;margin-top:4px;flex-wrap:wrap}
+  .mode{flex:1;min-width:120px;text-align:left;background:rgba(255,255,255,.06);padding:11px 12px}
+  .mode b{display:block;font-size:14.5px}.mode small{color:var(--muted);font-size:11px}
+  .mode.sel{background:linear-gradient(135deg,var(--amber),var(--coral));color:#241300}
+  .mode.sel small{color:rgba(36,19,0,.75)}
+
+  .tabs{display:flex;gap:8px;margin:22px 0 12px;flex-wrap:wrap}
+  .tab{background:rgba(255,255,255,.06)}
+  .tab.sel{background:linear-gradient(135deg,var(--violet),var(--teal));color:#fff;font-weight:600}
+  h2{font-size:15.5px;margin:20px 0 10px;color:rgba(238,241,255,.9)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:11px}
+  .layer{display:grid;grid-template-columns:32px 1fr auto;gap:4px 10px;align-items:center;
+    background:var(--card);border-radius:14px;padding:10px 12px;border-left:4px solid #4a5580}
+  .layer.ok{border-left-color:var(--ok)}.layer.warn{border-left-color:var(--warn)}
+  .layer.blocked{border-left-color:var(--err)}.layer.active{border-left-color:var(--violet)}
+  .idx{width:27px;height:27px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.1);font-size:12px}
+  .lname{font-weight:600;font-size:13.5px}
+  .lstat{font-size:11px;color:var(--muted)}
+  .ldet{grid-column:2/-1;font-size:11.5px;color:var(--muted)}
+  ol.steps{margin:0;padding-left:20px;font-size:13px}
+  ol.steps li{margin:4px 0} ol.steps li.s-warn{color:#ffd27a} ol.steps li.s-blocked{color:#ff9b8a}
+
+  .card{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid rgba(255,255,255,.08);
+    border-radius:16px;padding:13px}
+  .card.on{background:linear-gradient(135deg,rgba(18,198,165,.14),rgba(123,92,255,.14));border-color:rgba(18,198,165,.4)}
+  .cico{font-size:21px}.cbody{flex:1}.ctitle{font-weight:700;display:flex;align-items:center;gap:8px;font-size:13.5px}
+  .badge{font-size:9.5px;background:rgba(255,255,255,.15);padding:2px 8px;border-radius:999px}
+  .csum{font-size:12px;color:rgba(238,241,255,.8);margin-top:4px;line-height:1.35}
+  .creason{font-size:11px;color:var(--muted);margin-top:4px;font-style:italic}
+  .sw{position:relative;width:44px;height:25px;flex:none}
+  .sw input{opacity:0;width:0;height:0}
+  .sw span{position:absolute;inset:0;background:rgba(255,255,255,.2);border-radius:999px;transition:.2s}
+  .sw span::before{content:"";position:absolute;width:19px;height:19px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+  .sw input:checked+span{background:linear-gradient(135deg,var(--teal),var(--violet))}
+  .sw input:checked+span::before{transform:translateX(19px)}
+  .sw input:disabled+span{opacity:.4}
+
+  .sgroup{margin:13px 0;padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07)}
+  .sgroup h3{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted)}
+  .srow{display:grid;grid-template-columns:230px 1fr 74px;gap:12px;align-items:center;margin:8px 0}
+  .srow label{font-size:13px;color:rgba(238,241,255,.9)}
+  .srow output{text-align:right;font-variant-numeric:tabular-nums}
+  input[type=range]{accent-color:var(--amber);width:100%}
+  .primary{margin-top:16px;background:linear-gradient(135deg,var(--teal),var(--violet));color:#fff;font-weight:700;padding:12px 18px}
+  .srcline{display:grid;grid-template-columns:210px 1fr;gap:12px;align-items:center;margin:9px 0}
+  .srcline label{font-size:13px}
+  select,input[type=text]{width:100%;padding:9px 10px;border-radius:10px;border:1px solid var(--line);
+    background:rgba(255,255,255,.06);color:var(--ink);font:inherit}
+  .src{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;background:rgba(255,255,255,.04);padding:8px 10px;border-radius:10px;margin:5px 0}
+  .src code{color:var(--muted)}
+  .log{display:flex;flex-direction:column;gap:4px;font-size:12.5px;max-height:440px;overflow:auto}
+  .le{display:grid;grid-template-columns:64px 1fr;gap:10px;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.04)}
+  .le.warn{background:rgba(255,176,32,.12)}.le.err{background:rgba(255,90,90,.14)}.le.ok{background:rgba(18,198,165,.1)}
+  .le time{color:var(--muted)}
+  .loading{padding:60px;text-align:center;color:var(--muted)}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:linear-gradient(135deg,var(--teal),var(--violet));
+    color:#fff;padding:11px 20px;border-radius:12px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .25s}
+  .toast.show{opacity:1}
+  .hint{font-size:12px;color:var(--muted);margin:6px 0 0;line-height:1.4}
+  @media (max-width:780px){.hero{grid-template-columns:1fr}.srow,.srcline{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="loading">SolarFlow lädt …</div></div>
+<div class="toast" id="toast"></div>
+<script>
+"use strict";
+const T={
+ de:{title:"SolarFlow",sub:"Wärme und Laden in die Sonne schieben – sicher.",
+   emergency:"NOT-AUS",reset:"Not-Aus aufheben",feedin:"Einspeisung",storage:"Speicher",
+   changed:"Umschaltungen",off:"Aus",offHint:"Nur Schutz und Anzeige.",shadow:"Schatten",shadowHint:"Beobachten und vorschlagen, nicht schalten.",
+   active:"Aktiv",activeHint:"Automatik scharf, Grenzen bleiben aktiv.",layers:"Schutz-Ebenen",store:"Module",
+   settings:"Einstellungen",sources:"Quellen",log:"Protokoll",why:"Warum dieser Zustand?",normal:"Normal",boost:"Überschuss",
+   mandatory:"Pflicht",saved:"Gespeichert",loading:"SolarFlow lädt …",ok:"in Ordnung",warn:"Warnung",blocked:"Gesperrt",activeLayer:"aktiv",
+   grpBase:"Grundwerte",grpWw:"Warmwasser",grpWallbox:"Wallbox",grpHeating:"Heizung",grpForecast:"Prognose",grpSafety:"Sicherheit",
+   feedOn:"Boost ein ab (W)",feedOff:"Boost aus ab (W)",minRun:"Mindestlaufzeit (min)",minPause:"Mindestpause (min)",
+   boostTemp:"Boost-Temperatur (°C)",normalTemp:"Normaltemperatur (°C)",minTemp:"Mindesttemperatur (°C)",hygieneTemp:"Hygiene (°C)",wwHyst:"Bedarf-Hysterese (K)",
+   wallboxOn:"Laden ein ab (W)",wallboxOff:"Laden aus ab (W)",wallboxMinA:"Mindeststrom (A)",heatingShift:"Vorheizen (°C)",forecastHorizon:"Horizont (h)",
+   maxAge:"Max. Sensor-Alter (s)",maxGrid:"Max. Netzbezug (W)",verify:"Schreib-Verifikation",save:"Speichern",
+   detect:"Automatisch erkennen",savedSrc:"Quellen gespeichert",connected:"Verbunden",disconnected:"Getrennt",
+   noData:"Keine Daten – bitte Quellen prüfen.",allOk:"Alles in Ordnung.",confident:"sicher",guess:"Vorschlag",pick:"– bitte wählen –",
+   setTo:"auf",srcHint:"Wähle die Entitäten aus deinem Home Assistant. „Automatisch erkennen“ füllt sichere Vorschläge ein.",
+   modulesHint:"Anzeige- und Schutzmodule sind an. Schaltende Zusatzmodule gibst du bewusst frei.",logEmpty:"Noch keine Ereignisse."},
+ en:{title:"SolarFlow",sub:"Push heat and charging into the sun – safely.",
+   emergency:"EMERGENCY STOP",reset:"Reset emergency",feedin:"Feed-in",storage:"Storage",
+   changed:"Switches",off:"Off",offHint:"Protection and display only.",shadow:"Shadow",shadowHint:"Observe and suggest, do not switch.",
+   active:"Active",activeHint:"Automation armed, limits stay active.",layers:"Safety layers",store:"Modules",
+   settings:"Settings",sources:"Sources",log:"Log",why:"Why this state?",normal:"Normal",boost:"Surplus",
+   mandatory:"mandatory",saved:"Saved",loading:"SolarFlow loading …",ok:"ok",warn:"warn",blocked:"blocked",activeLayer:"active",
+   grpBase:"Basics",grpWw:"Hot water",grpWallbox:"Wallbox",grpHeating:"Heating",grpForecast:"Forecast",grpSafety:"Safety",
+   feedOn:"Boost on at (W)",feedOff:"Boost off at (W)",minRun:"Min runtime (min)",minPause:"Min pause (min)",
+   boostTemp:"Boost temperature (°C)",normalTemp:"Normal temperature (°C)",minTemp:"Minimum temperature (°C)",hygieneTemp:"Hygiene (°C)",wwHyst:"Demand hysteresis (K)",
+   wallboxOn:"Charging on at (W)",wallboxOff:"Charging off at (W)",wallboxMinA:"Minimum current (A)",heatingShift:"Pre-heat (°C)",forecastHorizon:"Horizon (h)",
+   maxAge:"Max sensor age (s)",maxGrid:"Max grid import (W)",verify:"Write verification",save:"Save",
+   detect:"Auto-detect",savedSrc:"Sources saved",connected:"Connected",disconnected:"Disconnected",
+   noData:"No data – please check sources.",allOk:"All good.",confident:"confident",guess:"suggestion",pick:"– please choose –",
+   setTo:"to",srcHint:"Choose entities from your Home Assistant. “Auto-detect” fills safe suggestions.",
+   modulesHint:"Display and safety modules are on. You enable switching add-ons deliberately.",logEmpty:"No events yet."}
+};
+let LANG=localStorage.getItem("sf_lang")||((navigator.language||"de").slice(0,2)==="en"?"en":"de");
+let SNAP=null, TAB="home", DRAFT=null, CATALOG=null;
+const $=s=>document.querySelector(s);
+const t=k=>(T[LANG]||T.de)[k]||k;
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(msg){const el=$("#toast");el.textContent=msg;el.classList.add("show");clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove("show"),1800);}
+
+// Unter Home-Assistant-Ingress laeuft die Seite unter einem Unterpfad
+// (z. B. /api/hassio_ingress/<token>/). Alle API-Aufrufe daher relativ zum
+// aktuellen Pfad bilden, damit direkter Zugriff und Ingress beide funktionieren.
+const BASE=location.pathname.endsWith("/")?location.pathname:location.pathname.replace(/[^/]*$/,"");
+async function api(path,opts){
+  try{const r=await fetch(BASE+path.replace(/^\//,""),Object.assign({headers:{"Content-Type":"application/json"}},opts||{}));
+    if(!r.ok){throw new Error(await r.text());} return await r.json();}
+  catch(e){toast(String(e.message||e));return null;}
+}
+async function refresh(){const s=await api("/api/snapshot"); if(s){SNAP=s; if(!DRAFT)DRAFT=Object.assign({},s.settings); render();}}
+
+function statusLabel(st){return st==="blocked"?t("blocked"):st==="warn"?t("warn"):st==="active"?t("activeLayer"):t("ok");}
+
+function render(){
+  if(!SNAP){$("#app").innerHTML=`<div class="loading">${t("loading")}</div>`;return;}
+  const s=SNAP;
+  $("#app").innerHTML=`<header>
+      <div class="brand"><div class="logo">☀️</div><div><h1>${t("title")}</h1><p class="sub">${t("sub")}</p></div></div>
+      <div class="hact">
+        <span class="conn ${s.connected?"on":"off"}">${s.connected?"● "+t("connected"):"○ "+t("disconnected")}</span>
+        <button class="ghost" data-lang>${LANG.toUpperCase()}</button>
+        <button class="danger ${s.emergency_stop?"pulse":""}" data-emg="${s.emergency_stop?0:1}">${s.emergency_stop?t("reset"):t("emergency")}</button>
+      </div>
+    </header>
+    ${hero(s)}
+    <nav class="tabs">${[["home",t("layers")],["store",t("store")],["settings",t("settings")],["sources",t("sources")],["log",t("log")]]
+      .map(([id,l])=>`<button class="tab ${TAB===id?"sel":""}" data-tab="${id}">${l}</button>`).join("")}</nav>
+    <div class="panel">${TAB==="home"?home(s):TAB==="store"?store(s):TAB==="settings"?settings(s):TAB==="sources"?sources(s):log(s)}</div>`;
+  wire();
+}
+function hero(s){
+  const pct=Math.max(-100,Math.min(100,((s.feed_in_w||0)/3000)*100));
+  const len=251, off=len-(len*Math.max(0,pct))/100;
+  const modes=["off","shadow","active"].map(m=>`<button class="mode ${s.mode===m?"sel":""}" data-mode="${m}"><b>${t(m)}</b><small>${t(m+"Hint")}</small></button>`).join("");
+  return `<section class="hero">
+    <div class="gauge"><svg viewBox="0 0 200 120">
+      <path class="track" d="M20 110 A80 80 0 0 1 180 110"/>
+      <path class="fill" d="M20 110 A80 80 0 0 1 180 110" style="stroke-dasharray:${len};stroke-dashoffset:${off}"/></svg>
+      <div class="gval"><strong>${s.feed_in_w!=null?Math.round(s.feed_in_w):"–"}</strong><span>W</span><em>${t("feedin")}</em></div></div>
+    <div class="hinfo">
+      <div class="chip ${s.state}">${s.state==="boost"?t("boost"):t("normal")}</div>
+      <div class="row"><span>${t("storage")}</span><b>${s.storage_temp!=null?s.storage_temp+" °C":"–"}</b></div>
+      <div class="row"><span>${t("changed")}</span><b>${s.machine_changes}</b></div>
+      <div class="why">${s.blocked?"🛡 ":"✅ "}${esc(s.reason_de||"")}</div>
+      <div class="modes">${modes}</div>
+    </div></section>`;
+}
+function home(s){
+  const layers=(s.layers||[]).map(l=>`<div class="layer ${l.status}"><div class="idx">${l.idx}</div>
+    <div class="lname">${esc(LANG==="de"?l.name_de:l.name_en)}</div><div class="lstat">${statusLabel(l.status)}</div>
+    <div class="ldet">${esc(LANG==="de"?l.detail_de:l.detail_en)}</div></div>`).join("");
+  const steps=(s.steps||[]).map(st=>`<li class="s-${st.status}">${esc(st.text)}</li>`).join("")||`<li>${t("allOk")}</li>`;
+  return `<h2>${t("layers")}</h2><div class="grid">${layers}</div><h2>${t("why")}</h2><ol class="steps">${steps}</ol>`;
+}
+function store(s){
+  const cats={base:"🧩",devices:"🔧",energy:"⚡",intelligence:"🧠",safety:"🛡️"};
+  const cards=(s.modules||[]).map(m=>`<div class="card ${m.enabled?"on":""}"><div class="cico">${cats[m.category]||"📦"}</div>
+    <div class="cbody"><div class="ctitle">${esc(LANG==="de"?m.name_de:m.name_en)}${!m.optional?`<span class="badge">${t("mandatory")}</span>`:""}</div>
+    <div class="csum">${esc(LANG==="de"?m.summary_de:m.summary_en)}</div>
+    <div class="creason">${esc(LANG==="de"?m.reason_de:m.reason_en)}</div></div>
+    <label class="sw"><input type="checkbox" data-module="${m.module_id}" ${m.enabled?"checked":""} ${!m.optional?"disabled":""}/><span></span></label></div>`).join("");
+  return `<h2>${t("store")}</h2><p class="hint">${t("modulesHint")}</p><div class="grid">${cards}</div>`;
+}
+function settings(s){
+  const d=DRAFT||s.settings;
+  const row=(k,l,mn,mx,st)=>`<div class="srow"><label>${l}</label>
+    <input type="range" data-range="${k}" min="${mn}" max="${mx}" step="${st}" value="${d[k]}"/><output data-out="${k}">${d[k]}</output></div>`;
+  const chk=(k,l)=>`<div class="srow"><label>${l}</label>
+    <label class="sw"><input type="checkbox" data-check="${k}" ${d[k]?"checked":""}/><span></span></label>
+    <output data-out="${k}">${d[k]?"✓":"–"}</output></div>`;
+  const grp=(title,body)=>`<section class="sgroup"><h3>${title}</h3>${body}</section>`;
+  return `<h2>${t("settings")}</h2>
+    ${grp(t("grpBase"),row("feed_in_on_w",t("feedOn"),0,20000,50)+row("feed_in_off_w",t("feedOff"),0,20000,50)+row("min_runtime_min",t("minRun"),0,720,1)+row("min_pause_min",t("minPause"),0,720,1))}
+    ${grp(t("grpWw"),row("ww_boost_temp",t("boostTemp"),10,60,1)+row("ww_normal_temp",t("normalTemp"),10,60,1)+row("ww_min_temp",t("minTemp"),10,60,1)+row("ww_hygiene_min_temp",t("hygieneTemp"),10,60,1)+row("ww_hysteresis_c",t("wwHyst"),0,15,0.5))}
+    ${grp(t("grpWallbox"),row("wallbox_on_w",t("wallboxOn"),0,20000,100)+row("wallbox_off_w",t("wallboxOff"),0,20000,100)+row("wallbox_min_charge_a",t("wallboxMinA"),6,32,1))}
+    ${grp(t("grpHeating"),row("heating_shift_c",t("heatingShift"),0,10,0.5))}
+    ${grp(t("grpForecast"),row("forecast_horizon_h",t("forecastHorizon"),1,72,1))}
+    ${grp(t("grpSafety"),row("sensor_max_age_s",t("maxAge"),10,3600,10)+row("max_grid_import_w",t("maxGrid"),1000,60000,100)+chk("verify_writes",t("verify")))}
+    <button class="primary" data-save>${t("save")}</button>`;
+}
+function sources(s){
+  const specs=s.source_specs||{};
+  const rows=Object.keys(specs).map(k=>{
+    const spec=specs[k]; const cur=(s.sources||{})[k]||"";
+    const domains=spec.domains||[];
+    const opts=(CATALOG||[]).filter(e=>domains.length===0||domains.includes(e.domain));
+    return `<div class="srcline"><label>${esc(spec.label)}</label><select data-src="${k}">
+      <option value="">${t("pick")}</option>
+      ${opts.map(e=>`<option value="${e.entity_id}" ${e.entity_id===cur?"selected":""}>${esc(e.entity_id)} — ${esc(e.name)}</option>`).join("")}
+    </select></div>`;}).join("");
+  const src=Object.entries(s.sources||{}).map(([k,v])=>`<div class="src"><span>${esc(k)}</span><code>${esc(v||"–")}</code></div>`).join("");
+  return `<h2>${t("sources")}</h2><p class="hint">${t("srcHint")}</p>
+    <button class="ghost" data-detect>✨ ${t("detect")}</button>
+    <div style="margin-top:12px">${rows}</div>
+    <button class="primary" data-savesrc>${t("save")}</button>
+    <h2>${t("sources")}</h2><div>${src}</div>`;
+}
+function log(s){
+  const rows=(s.audit||[]).map(e=>`<div class="le ${e.level}"><time>${esc(e.t)}</time><span>${esc(e.text)}</span></div>`).join("")||`<div class="le"><time></time><span>${t("logEmpty")}</span></div>`;
+  return `<h2>${t("log")}</h2><div class="log">${rows}</div>`;
+}
+function wire(){
+  document.querySelectorAll("[data-mode]").forEach(el=>el.onclick=async()=>{const r=await api("/api/mode",{method:"POST",body:JSON.stringify({mode:el.dataset.mode})});if(r){SNAP=r;render();}});
+  document.querySelectorAll("[data-emg]").forEach(el=>el.onclick=async()=>{const r=await api("/api/emergency",{method:"POST",body:JSON.stringify({on:el.dataset.emg==="1"})});if(r){SNAP=r;render();}});
+  document.querySelectorAll("[data-tab]").forEach(el=>el.onclick=()=>{TAB=el.dataset.tab;if(TAB==="sources"&&!CATALOG)loadCatalog();render();});
+  const lang=document.querySelector("[data-lang]");if(lang)lang.onclick=()=>{LANG=LANG==="de"?"en":"de";localStorage.setItem("sf_lang",LANG);render();};
+  const save=document.querySelector("[data-save]");if(save)save.onclick=saveSettings;
+  document.querySelectorAll("input[data-range]").forEach(el=>el.oninput=()=>{DRAFT=Object.assign({},DRAFT,{[el.dataset.range]:Number(el.value)});const o=document.querySelector(`output[data-out="${el.dataset.range}"]`);if(o)o.textContent=el.value;});
+  document.querySelectorAll("input[data-check]").forEach(el=>el.onchange=()=>{DRAFT=Object.assign({},DRAFT,{[el.dataset.check]:el.checked});const o=document.querySelector(`output[data-out="${el.dataset.check}"]`);if(o)o.textContent=el.checked?"✓":"–";});
+  document.querySelectorAll("input[data-module]").forEach(el=>el.onchange=async()=>{const r=await api("/api/module",{method:"POST",body:JSON.stringify({module_id:el.dataset.module,enabled:el.checked})});if(r){SNAP=r;render();}});
+  const det=document.querySelector("[data-detect]");if(det)det.onclick=detectSources;
+  const ssrc=document.querySelector("[data-savesrc]");if(ssrc)ssrc.onclick=saveSources;
+}
+async function saveSettings(){const r=await api("/api/settings",{method:"POST",body:JSON.stringify({settings:DRAFT})});
+  if(r){SNAP=r.snapshot;DRAFT=Object.assign({},r.snapshot.settings);render();toast(t("saved"));}}
+async function loadCatalog(){CATALOG=await api("/api/entities")||[];}
+async function detectSources(){
+  const sug=await api("/api/suggest")||[];
+  const map={};sug.forEach(x=>{if(x.entity_id)map[x.role]=x.entity_id;});
+  await api("/api/sources",{method:"POST",body:JSON.stringify({sources:map})});
+  await refresh();toast(t("detect"));render();
+}
+async function saveSources(){
+  const map={};document.querySelectorAll("[data-src]").forEach(el=>{map[el.dataset.src]=el.value;});
+  const r=await api("/api/sources",{method:"POST",body:JSON.stringify({sources:map})});
+  if(r){SNAP=r;toast(t("savedSrc"));render();}
+}
+refresh();
+setInterval(refresh,3000);
+</script>
+</body>
+</html>

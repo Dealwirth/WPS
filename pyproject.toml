@@ -25,8 +25,12 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 # Die Laufzeit und die HA-Schicht fangen bewusst breit ab: ein Fehler in einem
 # Zyklus darf die Integration nie anhalten (Fail-safe by design).
-"custom_components/solarflow/runtime.py" = ["BLE001"]
-"custom_components/solarflow/panel.py" = ["BLE001", "S110", "SIM105"]
-"custom_components/solarflow/__init__.py" = ["BLE001"]
+"legacy/solarflow/runtime.py" = ["BLE001"]
+"legacy/solarflow/panel.py" = ["BLE001", "S110", "SIM105"]
+"legacy/solarflow/__init__.py" = ["BLE001"]
+# Das Add-on faengt defensiv breit ab, damit es nie abstuerzt.
+"solarflow/app/engine.py" = ["BLE001"]
+"solarflow/app/ha_client.py" = ["BLE001", "S110"]
+"solarflow/app/server.py" = ["BLE001"]
 # Tests setzen sys.path bewusst vor dem Import des HA-freien Kerns.
 "tests/*" = ["RUF059", "E402"]
